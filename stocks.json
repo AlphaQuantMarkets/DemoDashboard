@@ -1,0 +1,47 @@
+{
+  "stocks": {
+    "VNM": { "name": "Vinamilk", "seed": 0 },
+    "VIC": { "name": "Vingroup", "seed": 1 },
+    "HPG": { "name": "Hòa Phát", "seed": 2 },
+    "FPT": { "name": "FPT Corp", "seed": 3 },
+    "MWG": { "name": "Mobile World", "seed": 4 },
+    "VHM": { "name": "Vinhomes", "seed": 5 }
+  },
+  "glossary": [
+    {
+      "term": "Volatility (Biến động)",
+      "vi": "Mức độ dao động của giá cổ phiếu theo thời gian. Volatility càng cao → rủi ro càng lớn, nhưng cơ hội lợi nhuận cũng nhiều hơn.",
+      "en": "Measures how much a stock's price fluctuates. Higher volatility = higher risk & potential reward."
+    },
+    {
+      "term": "Sharpe Ratio",
+      "vi": "Tỷ suất sinh lời điều chỉnh theo rủi ro. Sharpe > 1.0 được coi là tốt — nghĩa là bạn được 'thưởng' xứng đáng cho rủi ro đã chấp nhận.",
+      "en": "Risk-adjusted return. Sharpe > 1.0 is generally good — you're being rewarded well for the risk taken."
+    },
+    {
+      "term": "Beta (β)",
+      "vi": "Đo lường độ nhạy cảm của cổ phiếu so với thị trường chung (VN-Index). Beta < 1: ít biến động hơn thị trường. Beta > 1: biến động mạnh hơn.",
+      "en": "Measures sensitivity vs the market. Beta < 1: less volatile. Beta > 1: more volatile than market."
+    },
+    {
+      "term": "Max Drawdown (Mức giảm tối đa)",
+      "vi": "Mức sụt giảm lớn nhất từ đỉnh cao nhất xuống đáy thấp nhất trong kỳ. Ví dụ: -30% nghĩa là cổ phiếu từng giảm 30% từ đỉnh.",
+      "en": "The largest peak-to-trough decline. E.g. -30% means the stock once fell 30% from its peak."
+    },
+    {
+      "term": "Candlestick Chart (Biểu đồ nến)",
+      "vi": "Loại biểu đồ hiển thị 4 giá: mở cửa, đóng cửa, cao nhất, thấp nhất. Nến xanh = giá tăng. Nến đỏ = giá giảm.",
+      "en": "Chart showing open, close, high & low prices. Green candle = price up. Red candle = price down."
+    },
+    {
+      "term": "Rolling Volatility",
+      "vi": "Biến động được tính liên tục theo cửa sổ thời gian trượt (ví dụ: 20 ngày gần nhất). Cho thấy rủi ro thay đổi như thế nào theo thời gian.",
+      "en": "Volatility calculated over a rolling window (e.g. last 20 days). Shows how risk evolves over time."
+    },
+    {
+      "term": "Normalized Price (Giá chuẩn hóa)",
+      "vi": "Quy đổi giá về cùng gốc 100 để so sánh hiệu suất giữa các cổ phiếu khác giá nhau một cách công bằng.",
+      "en": "Rebases all prices to 100 for fair performance comparison across stocks with different price levels."
+    }
+  ]
+}

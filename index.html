@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaQuant | Risk Dashboard</title>
+  <!-- Tailwind CSS (used for topnav, footer, modal, utility classes) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg:    '#060b14',
+            bg2:   '#0a1628',
+            bg3:   '#0d1f35',
+            green: '#00ff94',
+            red:   '#ff4b4b',
+            amber: '#f5a623',
+            blue:  '#7ec8e3',
+            muted: '#7a8899',
+          },
+          fontFamily: {
+            mono: ['"Space Mono"', 'monospace'],
+            body: ['"DM Sans"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <!-- Custom stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- Plotly -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly.min.js" defer></script>
+  <!-- App logic -->
+  <script src="app.js" defer></script>
+</head>
+<body class="bg-bg text-white font-body">
+
+<!-- ─── LOADING OVERLAY ─────────────────────────────────────────────── -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-wordmark">⚡ ALPHAQUANT</div>
+  <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+</div>
+
+<!-- ─── AUTH MODAL ──────────────────────────────────────────────────── -->
+<div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+  <div class="modal-backdrop" onclick="closeModal()"></div>
+  <div class="auth-modal-box">
+    <div class="flex items-center justify-between mb-1">
+      <span class="font-mono text-green font-bold tracking-widest text-base" id="authModalTitle">LOGIN</span>
+      <button onclick="closeModal()" class="text-muted hover:text-white transition-colors text-2xl leading-none">&times;</button>
+    </div>
+    <p class="text-muted text-sm mb-5" id="authModalDesc">Đăng nhập vào tài khoản AlphaQuant của bạn.</p>
+    <div class="flex flex-col gap-3">
+      <input type="email" placeholder="Email" class="auth-input" />
+      <input type="password" placeholder="Mật khẩu / Password" class="auth-input" />
+    </div>
+    <button class="btn-solid w-full mt-5 justify-center" onclick="closeModal()">Tiếp tục / Continue →</button>
+    <p class="text-center text-muted/60 text-xs mt-4">Đây là trang demo — chưa có xử lý backend.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     STICKY TOP NAVIGATION
+══════════════════════════════════════════════════════════════════════ -->
+<header class="topnav">
+
+  <!-- Left: Logo -->
+  <div class="flex items-center gap-3 shrink-0">
+    <span class="font-mono text-green font-bold text-lg tracking-[3px] whitespace-nowrap">⚡ ALPHAQUANT</span>
+    <span class="hidden md:inline text-muted text-xs border-l border-white/10 pl-3 whitespace-nowrap">Risk Dashboard</span>
+  </div>
+
+  <!-- Center: Search -->
+  <div class="topnav-search">
+    <svg class="topnav-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="9" cy="9" r="6"/><path stroke-linecap="round" d="M15 15l3 3"/>
+    </svg>
+    <input id="headerSearch" type="text"
+      placeholder="Tìm mã cổ phiếu... (VNM, FPT, HPG...)"
+      class="topnav-search-input" autocomplete="off" />
+    <div id="searchDropdown" class="search-dropdown hidden"></div>
+  </div>
+
+  <!-- Right: Clock + Buttons -->
+  <div class="flex items-center gap-3 shrink-0">
+    <span class="hidden xl:block font-mono text-xs text-muted tabular-nums" id="clockEl"></span>
+    <button class="btn-outline" onclick="openModal('login')">Login</button>
+    <button class="btn-solid"   onclick="openModal('signup')">Sign Up</button>
+  </div>
+
+</header>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     PAGE BODY  (sidebar + main)
+══════════════════════════════════════════════════════════════════════ -->
+<div class="app-body">
+
+  <!-- ─── SIDEBAR ──────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+
+    <!-- GROUP: ANALYSIS -->
+    <div class="sidebar-group">
+      <p class="sidebar-group-label">📊 Phân tích / Analysis</p>
+
+      <div class="sidebar-field">
+        <p class="sidebar-label">📌 Cổ phiếu / Stock</p>
+        <div class="select-wrapper">
+          <select id="stockSelect"></select>
+        </div>
+      </div>
+
+      <div class="sidebar-field">
+        <p class="sidebar-label">📅 Khoảng thời gian / Period</p>
+        <input type="range" id="periodSlider" />
+        <div class="slider-row">
+          <span>30</span><span>60</span><span>90</span><span>180</span><span>365</span>
+        </div>
+        <div class="period-display" id="periodLabel">180 ngày</div>
+      </div>
+    </div>
+
+    <hr class="sidebar-divider" />
+
+    <!-- GROUP: COMPARE -->
+    <div class="sidebar-group">
+      <p class="sidebar-group-label">⚖️ So sánh / Compare</p>
+      <div class="compare-list" id="compareList"></div>
+    </div>
+
+    <hr class="sidebar-divider" />
+
+    <!-- GROUP: WATCHLIST -->
+    <div class="sidebar-group">
+      <p class="sidebar-group-label">⭐ Danh mục theo dõi / Watchlist</p>
+      <div id="watchlistItems" class="flex flex-col gap-1.5"></div>
+      <button id="addWatchlistBtn" class="watchlist-add-btn">＋ Thêm mã hiện tại</button>
+    </div>
+
+    <p class="sidebar-disclaimer">
+      ⚠️ Dữ liệu mô phỏng cho mục đích demo.<br/>Không phải tư vấn đầu tư.
+    </p>
+  </aside>
+
+  <!-- ─── MAIN CONTENT ──────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab1">📈 Phân tích đơn</button>
+      <button class="tab-btn"        data-tab="tab2">⚖️ So sánh</button>
+      <button class="tab-btn"        data-tab="tab3">📖 Thuật ngữ</button>
+    </div>
+
+    <!-- ══════ TAB 1 ══════════════════════════════════════════════════ -->
+    <div class="tab-panel active" id="tab1">
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-label">Giá hiện tại / Price</div>
+          <div class="metric-value" id="mPriceVal" style="color:var(--green)">—</div>
+          <div class="metric-sub"   id="mPriceSub">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Biến động / Volatility</div>
+          <div class="metric-value" id="mVolVal" style="color:var(--green)">—</div>
+          <div class="metric-sub"   id="mVolSub">Annualized</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Sharpe Ratio</div>
+          <div class="metric-value" id="mSharpeVal" style="color:var(--green)">—</div>
+          <div class="metric-sub"   id="mSharpeSub">&gt; 1.0 là tốt</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Beta (vs VN-Index)</div>
+          <div class="metric-value" id="mBetaVal" style="color:var(--amber)">—</div>
+          <div class="metric-sub"   id="mBetaSub">&lt; 1: ít rủi ro hơn TT</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Max Drawdown</div>
+          <div class="metric-value" id="mDrawdownVal" style="color:var(--red)">—</div>
+          <div class="metric-sub"   id="mDrawdownSub">Mức giảm tối đa</div>
+        </div>
+      </div>
+
+      <div class="risk-row">
+        <span class="risk-row-label">Mức độ rủi ro / Risk Level:</span>
+        <span class="risk-badge risk-low" id="riskBadge">—</span>
+      </div>
+
+      <div class="section-title">Biến động giá / Price Action</div>
+      <div class="chart-box"><div id="chartCandle"></div></div>
+
+      <div class="charts-bottom">
+        <div>
+          <div class="section-title">Khối lượng / Volume</div>
+          <div class="chart-box"><div id="chartVolume"></div></div>
+        </div>
+        <div>
+          <div class="section-title">Đường giá + Rolling Volatility</div>
+          <div class="chart-box"><div id="chartLine"></div></div>
+        </div>
+      </div>
+    </div><!-- /tab1 -->
+
+    <!-- ══════ TAB 2 ══════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab2">
+      <div class="info-box" id="compareInfo">
+        👈 Chọn thêm ít nhất 1 cổ phiếu ở sidebar để so sánh.<br/>
+        Select at least 1 more stock in the sidebar to compare.
+      </div>
+      <div id="compareCharts" style="display:none">
+        <div class="section-title">Giá chuẩn hóa / Normalized Price (Base = 100)</div>
+        <div class="chart-box"><div id="chartNorm"></div></div>
+        <div class="section-title">So sánh chỉ số rủi ro / Risk Metrics</div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr>
+              <th>Mã</th><th>Tên</th><th>Giá</th>
+              <th>Volatility</th><th>Sharpe</th><th>Beta</th>
+              <th>Max DD</th><th>Rủi ro</th>
+            </tr></thead>
+            <tbody id="compareBody"></tbody>
+          </table>
+        </div>
+        <div class="section-title">Biến động theo cổ phiếu / Volatility by Stock</div>
+        <div class="chart-box"><div id="chartVolBar"></div></div>
+      </div>
+    </div><!-- /tab2 -->
+
+    <!-- ══════ TAB 3 ══════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab3">
+      <div class="section-title">📖 Thuật ngữ tài chính / Financial Glossary</div>
+      <div class="glossary-grid" id="glossaryGrid"></div>
+    </div>
+
+  </main>
+</div><!-- /app-body -->
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════════════════════════ -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span class="font-mono text-xs tracking-widest" style="color:#00ff9480">⚡ ALPHAQUANT</span>
+    <span class="text-xs text-muted">© 2026 AlphaQuant | TheNextX 2026 · Techcombank</span>
+    <span class="text-xs italic" style="color:#7a889980">
+      Dữ liệu chỉ mang tính chất tham khảo cho mục đích demo, không phải lời khuyên đầu tư.
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
