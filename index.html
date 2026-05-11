@@ -123,14 +123,6 @@
 
     <hr class="sidebar-divider" />
 
-    <!-- GROUP: COMPARE -->
-    <div class="sidebar-group">
-      <p class="sidebar-group-label">⚖️ So sánh / Compare</p>
-      <div class="compare-list" id="compareList"></div>
-    </div>
-
-    <hr class="sidebar-divider" />
-
     <!-- GROUP: WATCHLIST -->
     <div class="sidebar-group">
       <p class="sidebar-group-label">⭐ Danh mục theo dõi / Watchlist</p>
@@ -150,7 +142,9 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="tab1">📈 Phân tích đơn</button>
       <button class="tab-btn"        data-tab="tab2">⚖️ So sánh</button>
+      <button class="tab-btn"        data-tab="tab5">🤖 Phân Tích AI</button>
       <button class="tab-btn"        data-tab="tab3">📖 Thuật ngữ</button>
+      <button class="tab-btn"        data-tab="tab4">👥 Cộng đồng</button>
     </div>
 
     <!-- ══════ TAB 1 ══════════════════════════════════════════════════ -->
@@ -205,9 +199,20 @@
 
     <!-- ══════ TAB 2 ══════════════════════════════════════════════════ -->
     <div class="tab-panel" id="tab2">
+      <div class="compare-picker">
+        <div class="compare-picker-head">
+          <div>
+            <div class="section-title">Chọn cổ phiếu so sánh / Compare Stocks</div>
+            <p class="compare-picker-note">Mã đang phân tích sẽ luôn được dùng làm mốc so sánh.</p>
+          </div>
+          <span class="compare-base" id="compareBaseLabel">Base: —</span>
+        </div>
+        <div class="compare-list compare-list-grid" id="compareList"></div>
+      </div>
+
       <div class="info-box" id="compareInfo">
-        👈 Chọn thêm ít nhất 1 cổ phiếu ở sidebar để so sánh.<br/>
-        Select at least 1 more stock in the sidebar to compare.
+        Chọn thêm ít nhất 1 cổ phiếu ở phía trên để so sánh.<br/>
+        Select at least 1 more stock above to compare.
       </div>
       <div id="compareCharts" style="display:none">
         <div class="section-title">Giá chuẩn hóa / Normalized Price (Base = 100)</div>
@@ -228,10 +233,187 @@
       </div>
     </div><!-- /tab2 -->
 
+    <!-- ══════ TAB 5 ══════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab5">
+      <div class="ai-analysis-layout">
+        <aside class="ai-control-panel">
+          <div class="section-title">🤖 Phân Tích AI / AI Risk Analysis</div>
+          <p class="ai-panel-note">Demo giao diện phân tích rủi ro bằng AI. Nội dung bên phải là mô phỏng, chưa gọi AI thật.</p>
+
+          <div class="ai-field">
+            <label for="aiStockSelect">Mã cổ phiếu</label>
+            <div class="select-wrapper">
+              <select id="aiStockSelect"></select>
+            </div>
+          </div>
+
+          <div class="ai-field">
+            <label>Khẩu vị rủi ro</label>
+            <div class="ai-segmented">
+              <button class="active" type="button">Thận trọng</button>
+              <button type="button">Cân bằng</button>
+              <button type="button">Mạo hiểm</button>
+            </div>
+          </div>
+
+          <div class="ai-field">
+            <label>Góc nhìn phân tích</label>
+            <div class="ai-check-row">
+              <label><input type="checkbox" checked /> Biến động</label>
+              <label><input type="checkbox" checked /> Drawdown</label>
+              <label><input type="checkbox" checked /> Beta</label>
+            </div>
+          </div>
+
+          <button class="ai-run-btn" type="button" id="aiRunBtn">Tạo phân tích demo</button>
+        </aside>
+
+        <section class="ai-result-panel">
+          <div class="ai-result-head">
+            <div>
+              <span class="ai-kicker">AI DEMO OUTPUT</span>
+              <h3 id="aiResultTitle">—</h3>
+            </div>
+            <span class="ai-status-pill">Demo mode</span>
+          </div>
+
+          <div class="ai-summary-card">
+            <div class="ai-score">
+              <span id="aiRiskScore">—</span>
+              <small>Risk Score</small>
+            </div>
+            <div>
+              <h4 id="aiRiskHeadline">—</h4>
+              <p id="aiRiskSummary">—</p>
+            </div>
+          </div>
+
+          <div class="ai-insight-grid">
+            <div class="ai-insight-card">
+              <span>Volatility</span>
+              <strong id="aiVolValue">—</strong>
+              <p id="aiVolText">—</p>
+            </div>
+            <div class="ai-insight-card">
+              <span>Sharpe</span>
+              <strong id="aiSharpeValue">—</strong>
+              <p id="aiSharpeText">—</p>
+            </div>
+            <div class="ai-insight-card">
+              <span>Max Drawdown</span>
+              <strong id="aiDrawdownValue">—</strong>
+              <p id="aiDrawdownText">—</p>
+            </div>
+          </div>
+
+          <div class="ai-recommendation">
+            <h4>Kết luận mô phỏng</h4>
+            <ul id="aiRecommendationList"></ul>
+          </div>
+
+          <p class="ai-disclaimer">Đây là nội dung demo để minh họa trải nghiệm sản phẩm, không phải khuyến nghị đầu tư.</p>
+        </section>
+      </div>
+    </div><!-- /tab5 -->
+
     <!-- ══════ TAB 3 ══════════════════════════════════════════════════ -->
     <div class="tab-panel" id="tab3">
       <div class="section-title">📖 Thuật ngữ tài chính / Financial Glossary</div>
       <div class="glossary-grid" id="glossaryGrid"></div>
+    </div>
+
+    <!-- ══════ TAB 4 ══════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab4">
+      <div class="community-header">
+        <div>
+          <div class="section-title">👥 Cộng đồng / Community</div>
+          <p class="community-subtitle">Theo dõi bài viết, trao đổi chiến lược và tham gia các hội nhóm đầu tư.</p>
+        </div>
+        <button class="community-primary-btn">＋ Tạo bài viết</button>
+      </div>
+
+      <div class="community-branches">
+        <section class="community-panel">
+          <div class="community-panel-head">
+            <span class="community-icon">📝</span>
+            <div>
+              <h3>Bài viết</h3>
+              <p>Phân tích, nhận định và ghi chú thị trường.</p>
+            </div>
+          </div>
+          <div class="community-list">
+            <article class="community-item">
+              <div class="community-item-title">Góc nhìn VNM sau nhịp điều chỉnh</div>
+              <div class="community-meta">Minh Anh · 12 phút trước · 18 lượt thích</div>
+            </article>
+            <article class="community-item">
+              <div class="community-item-title">Cách đọc volatility khi thị trường rung lắc</div>
+              <div class="community-meta">Alpha Team · 1 giờ trước · 34 lượt thích</div>
+            </article>
+            <article class="community-item">
+              <div class="community-item-title">Checklist quản trị rủi ro trước mùa báo cáo</div>
+              <div class="community-meta">Quang Huy · Hôm nay · 21 lượt thích</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="community-panel">
+          <div class="community-panel-head">
+            <span class="community-icon">💬</span>
+            <div>
+              <h3>Thảo luận</h3>
+              <p>Câu hỏi nhanh, phản biện và chia sẻ kịch bản.</p>
+            </div>
+          </div>
+          <div class="community-list">
+            <article class="community-item">
+              <div class="community-item-title">HPG có đang vào vùng tích lũy?</div>
+              <div class="community-meta">27 bình luận · Đang sôi nổi</div>
+            </article>
+            <article class="community-item">
+              <div class="community-item-title">Sharpe Ratio bao nhiêu là đủ tốt với cổ phiếu chu kỳ?</div>
+              <div class="community-meta">14 bình luận · 3 chuyên gia tham gia</div>
+            </article>
+            <article class="community-item">
+              <div class="community-item-title">So sánh FPT và MWG trong danh mục tăng trưởng</div>
+              <div class="community-meta">9 bình luận · Mới cập nhật</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="community-panel">
+          <div class="community-panel-head">
+            <span class="community-icon">👥</span>
+            <div>
+              <h3>Hội nhóm</h3>
+              <p>Không gian theo chủ đề để theo dõi cùng nhau.</p>
+            </div>
+          </div>
+          <div class="community-list">
+            <article class="community-item community-group-item">
+              <div>
+                <div class="community-item-title">Risk Management Lab</div>
+                <div class="community-meta">1.2k thành viên · Công khai</div>
+              </div>
+              <button class="community-join-btn">Tham gia</button>
+            </article>
+            <article class="community-item community-group-item">
+              <div>
+                <div class="community-item-title">Cổ phiếu tăng trưởng Việt Nam</div>
+                <div class="community-meta">860 thành viên · Công khai</div>
+              </div>
+              <button class="community-join-btn">Tham gia</button>
+            </article>
+            <article class="community-item community-group-item">
+              <div>
+                <div class="community-item-title">Phân tích kỹ thuật thực chiến</div>
+                <div class="community-meta">2.4k thành viên · Công khai</div>
+              </div>
+              <button class="community-join-btn">Tham gia</button>
+            </article>
+          </div>
+        </section>
+      </div>
     </div>
 
   </main>

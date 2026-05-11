@@ -245,6 +245,8 @@ function buildSidebar() {
 
 function buildCompareList() {
   const container = document.getElementById('compareList');
+  const baseLabel = document.getElementById('compareBaseLabel');
+  if (baseLabel) baseLabel.textContent = `Base: ${STATE.selected}`;
   container.innerHTML = '';
   for (const [ticker, info] of Object.entries(STATE.stocks)) {
     if (ticker === STATE.selected) continue;
@@ -292,6 +294,75 @@ function initTabs() {
 /* ═══════════════════════════════════════════════════════════════════════
    10. RENDER ORCHESTRATOR
    ═══════════════════════════════════════════════════════════════════════ */
+function initAIAnalysis() {
+  const select = document.getElementById('aiStockSelect');
+  const runBtn = document.getElementById('aiRunBtn');
+  if (!select) return;
+
+  for (const [ticker, info] of Object.entries(STATE.stocks)) {
+    const opt = document.createElement('option');
+    opt.value = ticker;
+    opt.textContent = `${ticker} — ${info.name}`;
+    select.appendChild(opt);
+  }
+  select.value = STATE.selected;
+
+  select.addEventListener('change', renderAIAnalysis);
+  if (runBtn) runBtn.addEventListener('click', renderAIAnalysis);
+  document.querySelectorAll('.ai-segmented button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ai-segmented button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAIAnalysis();
+    });
+  });
+  renderAIAnalysis();
+}
+
+function renderAIAnalysis() {
+  const select = document.getElementById('aiStockSelect');
+  if (!select || !STATE.allData[select.value]) return;
+
+  const ticker = select.value;
+  const info = STATE.stocks[ticker];
+  const metrics = computeMetrics(STATE.allData[ticker].slice(-STATE.period));
+  const volPct = metrics.volAnn * 100;
+  const ddPct = Math.abs(metrics.maxDD * 100);
+  const riskScore = Math.min(99, Math.max(1, Math.round(volPct * 1.25 + ddPct * 0.9 + metrics.beta * 12)));
+  const tone = riskScore >= 70 ? 'cao' : riskScore >= 45 ? 'trung bình' : 'thấp';
+  const action = riskScore >= 70
+    ? 'nên ưu tiên quản trị vị thế và chờ vùng giá ổn định hơn.'
+    : riskScore >= 45
+      ? 'phù hợp để theo dõi thêm, đặc biệt khi kết hợp với điểm mua rõ ràng.'
+      : 'đang có hồ sơ rủi ro tương đối dễ kiểm soát trong giai đoạn quan sát.';
+
+  setText('aiResultTitle', `${ticker} — ${info.name}`);
+  setText('aiRiskScore', riskScore);
+  setText('aiRiskHeadline', `Mức rủi ro mô phỏng: ${tone.toUpperCase()}`);
+  setText('aiRiskSummary', `AI demo đánh giá ${ticker} có rủi ro ${tone} trong khung ${STATE.period} ngày. Với volatility ${volPct.toFixed(1)}%, beta ${metrics.beta.toFixed(2)} và drawdown tối đa ${(metrics.maxDD * 100).toFixed(1)}%, mã này ${action}`);
+
+  setText('aiVolValue', `${volPct.toFixed(1)}%`);
+  setText('aiVolText', volPct > 40 ? 'Biến động cao, cần giới hạn tỷ trọng và đặt ngưỡng cắt lỗ rõ.' : volPct > 20 ? 'Biến động ở mức vừa, phù hợp theo dõi cùng xu hướng giá.' : 'Biến động thấp, phù hợp khẩu vị thận trọng hơn.');
+  setText('aiSharpeValue', metrics.sharpe.toFixed(2));
+  setText('aiSharpeText', metrics.sharpe > 1 ? 'Hiệu suất điều chỉnh rủi ro đang tích cực trong dữ liệu demo.' : 'Hiệu suất chưa thật nổi bật so với mức biến động.');
+  setText('aiDrawdownValue', `${(metrics.maxDD * 100).toFixed(1)}%`);
+  setText('aiDrawdownText', ddPct > 15 ? 'Drawdown sâu, nên kiểm tra vùng hỗ trợ và quản trị lỗ.' : 'Drawdown còn trong vùng dễ kiểm soát hơn.');
+
+  const list = document.getElementById('aiRecommendationList');
+  if (list) {
+    list.innerHTML = `
+      <li>Không dùng kết quả demo này như tín hiệu mua bán trực tiếp.</li>
+      <li>Theo dõi thêm xu hướng giá, khối lượng và biến động 20 phiên.</li>
+      <li>Nếu đưa vào danh mục, nên đặt trước tỷ trọng tối đa và điểm thoát rủi ro.</li>
+    `;
+  }
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
 function render() {
   const rows = STATE.allData[STATE.selected].slice(-STATE.period);
   const m    = computeMetrics(rows);
@@ -301,6 +372,7 @@ function render() {
   renderVolume(rows);
   renderPriceLine(rows);
   renderComparison();
+  renderAIAnalysis();
 }
 
 function renderMetrics(m) {
@@ -504,6 +576,7 @@ async function init() {
 
   initTabs();
   buildSidebar();
+  initAIAnalysis();
   buildGlossary();
   initSearch();
   initWatchlist();
