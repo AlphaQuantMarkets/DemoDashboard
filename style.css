@@ -1109,7 +1109,7 @@ input[type=range] {
   right: 24px;
   z-index: 500;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: flex-end;
   gap: 10px;
 }
@@ -1298,7 +1298,9 @@ input[type=range] {
 
 /* Chat tooltip bubble */
 .chat-tooltip {
-  position: relative;
+  position: fixed;
+  bottom: 130px;
+  right: 100px;
   background: #ffffff;
   border: 3px solid #f5a623;
   border-radius: 14px;
@@ -1307,33 +1309,29 @@ input[type=range] {
   color: #1a2a3a;
   font-weight: 600;
   line-height: 1.55;
-  max-width: 230px;
+  max-width: 210px;
   box-shadow: 4px 4px 0px #f5a62355;
   animation: fadeUp 0.4s ease 0.8s both;
 }
-/* Đuôi bong bóng góc dưới phải */
 .chat-tooltip::after {
   content: '';
   position: absolute;
   bottom: -18px;
-  right: 22px;
+  right: -2px;
   width: 0;
   height: 0;
-  border-left: 10px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 16px solid #f5a623;
+  border-left: 18px solid transparent;
+  border-top: 18px solid #f5a623;
 }
-/* Lớp trắng che border để tạo hiệu ứng outline */
 .chat-tooltip::before {
   content: '';
   position: absolute;
   bottom: -12px;
-  right: 24px;
+  right: 2px;
   width: 0;
   height: 0;
-  border-left: 8px solid transparent;
-  border-right: 3px solid transparent;
-  border-top: 13px solid #ffffff;
+  border-left: 14px solid transparent;
+  border-top: 14px solid #ffffff;
   z-index: 1;
 }
 .chat-tooltip-close {
@@ -1350,5 +1348,5 @@ input[type=range] {
   font-weight: 700;
   transition: color var(--transition);
 }
-.chat-tooltip-close:hover { color: #d4881a; }
+.chat-tooltip-close:hover { color: #292dac; }
 .chat-tooltip.hidden { display: none; }
