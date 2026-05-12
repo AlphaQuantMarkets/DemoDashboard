@@ -532,5 +532,44 @@
   </div>
 </footer>
 
+<!-- ─── CHATBOT WIDGET ──────────────────────────────────────────────── -->
+<div id="chatbotWidget">
+  <div id="chatWindow" class="chat-hidden">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <img src="assets/chatbot.png" class="chat-avatar-sm" alt="AI" />
+        <div>
+          <div class="chat-title">AlphaQuant AI</div>
+          <div class="chat-subtitle">Trợ lý phân tích rủi ro</div>
+        </div>
+      </div>
+      <button id="chatCloseBtn" class="chat-close-btn">&times;</button>
+    </div>
+    <div id="chatMessages" class="chat-messages">
+      <div class="chat-msg ai">
+        <span>Chào bạn! Mình là AI của AlphaQuant, hỗ trợ bạn phân tích và hiểu chứng khoán dễ dàng hơn. 📊</span>
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <input id="chatInput" type="text" placeholder="Nhập câu hỏi..." autocomplete="off" />
+      <button id="chatSendBtn">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M2 10l16-8-6 16-3-5-7-3z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="chatTooltip" class="chat-tooltip">
+    Mình là AI Assistant của AlphaQuant, luôn sẵn sàng hỗ trợ bạn 💬
+    <button id="chatTooltipClose" class="chat-tooltip-close">&times;</button>
+  </div>
+
+  <button id="chatFab" title="Chat với AI">
+    <img src="assets/chatbot.png" alt="Chat AI" />
+  </button>
+
+  
+
+</div>
+
 </body>
 </html>

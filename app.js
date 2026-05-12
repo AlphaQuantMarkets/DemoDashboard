@@ -607,3 +607,101 @@ async function init() {
 }
 
 window.addEventListener('DOMContentLoaded', init);
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CHATBOT WIDGET — AI thật (Anthropic API)
+   ═══════════════════════════════════════════════════════════════════════ */
+(function initChatbot() {
+  const fab        = document.getElementById('chatFab');
+  const chatWindow = document.getElementById('chatWindow');
+  const closeBtn   = document.getElementById('chatCloseBtn');
+  const input      = document.getElementById('chatInput');
+  const sendBtn    = document.getElementById('chatSendBtn');
+  const msgBox     = document.getElementById('chatMessages');
+
+  /* Tooltip tự ẩn */
+  const tooltip = document.getElementById('chatTooltip');
+  const tooltipClose = document.getElementById('chatTooltipClose');
+  const hideTooltip = () => tooltip?.classList.add('hidden');
+
+  tooltipClose.addEventListener('click', hideTooltip);
+  fab.addEventListener('click', hideTooltip);          // mở chat → ẩn tooltip
+  setTimeout(hideTooltip, 7000);                        // tự ẩn sau 7 giây
+
+  // history gửi lên API (không gồm system prompt)
+  const history = [];
+
+  const SYSTEM = `Bạn là AlphaQuant AI — trợ lý phân tích rủi ro chứng khoán Việt Nam.
+Trả lời ngắn gọn, rõ ràng, bằng tiếng Việt (hoặc tiếng Anh nếu người dùng hỏi tiếng Anh).
+Chỉ tư vấn thông tin tham khảo, không phải khuyến nghị đầu tư chính thức.
+Các cổ phiếu có trong hệ thống: VNM (Vinamilk), VIC (Vingroup), HPG (Hòa Phát), FPT (FPT Corp), MWG (Mobile World), VHM (Vinhomes).
+Các chỉ số hỗ trợ: Volatility, Sharpe Ratio, Beta, Max Drawdown, Rolling Volatility.`;
+
+  /* Toggle cửa sổ */
+  fab.addEventListener('click', () => {
+    chatWindow.classList.toggle('chat-hidden');
+    if (!chatWindow.classList.contains('chat-hidden')) {
+      input.focus();
+    }
+  });
+  closeBtn.addEventListener('click', () => chatWindow.classList.add('chat-hidden'));
+
+  /* Append bubble */
+  function appendMsg(role, text, isTyping = false) {
+    const wrap = document.createElement('div');
+    wrap.className = `chat-msg ${role}${isTyping ? ' typing' : ''}`;
+    const span = document.createElement('span');
+    span.textContent = text;
+    wrap.appendChild(span);
+    msgBox.appendChild(wrap);
+    msgBox.scrollTop = msgBox.scrollHeight;
+    return wrap;
+  }
+
+  /* Gọi Anthropic API */
+  async function askAI(userText) {
+    history.push({ role: 'user', content: userText });
+
+    const typingBubble = appendMsg('ai', 'Đang soạn tin nhắn...', true);
+    sendBtn.disabled = true;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: SYSTEM,
+          messages: history,
+        }),
+      });
+
+      const data = await res.json();
+      const reply = data?.content?.[0]?.text ?? 'Xin lỗi, không nhận được phản hồi.';
+
+      typingBubble.remove();
+      appendMsg('ai', reply);
+      history.push({ role: 'assistant', content: reply });
+
+    } catch (err) {
+      typingBubble.remove();
+      appendMsg('ai', '⚠️ Lỗi kết nối. Vui lòng thử lại.');
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  /* Send */
+  function handleSend() {
+    const text = input.value.trim();
+    if (!text) return;
+    appendMsg('user', text);
+    input.value = '';
+    askAI(text);
+  }
+
+  sendBtn.addEventListener('click', handleSend);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') handleSend(); });
+})();
