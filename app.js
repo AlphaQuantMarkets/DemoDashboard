@@ -76,10 +76,185 @@ function computeMetrics(rows) {
 /* ═══════════════════════════════════════════════════════════════════════
    3. STATE
    ═══════════════════════════════════════════════════════════════════════ */
+function initGuideOverlay() {
+  const overlay   = document.getElementById('stockGuideOverlay');
+  const spotlight = document.getElementById('stockGuideSpotlight');
+  const tooltip   = document.getElementById('stockGuideTooltip');
+  // Trên mobile sidebar bị ẩn → dùng mobile select thay thế
+  const isMobile = window.innerWidth <= 860;
+  const target = isMobile
+    ? document.getElementById('stockSelectMobile')
+    : document.getElementById('stockSelect');
+  if (!overlay || !target) return;
+  function positionSpotlight() {
+    const r   = target.closest('.select-wrapper').getBoundingClientRect();
+    const pad = 8;
+
+    // Spotlight bám ô select
+    spotlight.style.left   = (r.left   - pad) + 'px';
+    spotlight.style.top    = (r.top    - pad) + 'px';
+    spotlight.style.width  = (r.width  + pad * 2) + 'px';
+    spotlight.style.height = (r.height + pad * 2) + 'px';
+
+    // Tooltip bên PHẢI spotlight, mũi tên trỏ sang trái
+    const tooltipLeft = r.right + 24;
+    const tooltipTop  = r.top + (r.height / 2) - 50;
+    tooltip.style.left = tooltipLeft + 'px';
+    tooltip.style.top  = tooltipTop  + 'px';
+  }
+
+  // Scroll về đầu TRƯỚC khi tính position
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  document.body.style.overflow = 'hidden';
+
+  // Đợi 1 frame để browser apply scroll xong rồi mới position
+  requestAnimationFrame(() => {
+    positionSpotlight();
+  });
+  window.addEventListener('resize', positionSpotlight);
+
+  function close() {
+    overlay.classList.add('hidden');
+    window.removeEventListener('resize', positionSpotlight);
+    document.body.style.overflow = '';
+    // Chuyển sang guide chatbot
+    setTimeout(initChatbotGuide, 400);
+  }
+  overlay.style.pointerEvents = 'auto';
+  overlay.addEventListener('click', e => {
+    const inSpot    = spotlight.contains(e.target) || target.contains(e.target);
+    const inTooltip = tooltip.contains(e.target);
+    if (!inSpot && !inTooltip) close();
+  });
+
+  target.addEventListener('change', close);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+}
+
+let _chatGuideShown = false;
+function initChatbotGuide() {
+  if (_chatGuideShown) return;
+  _chatGuideShown = true;
+  const fab = document.getElementById('chatFab');
+  if (!fab) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'chatGuideOverlay';
+  overlay.className = 'stock-guide-overlay';
+  overlay.innerHTML = `
+    <div id="chatGuideSpotlight" class="stock-guide-spotlight"></div>
+    <div id="chatGuideTooltip" class="stock-guide-tooltip chat-guide-tooltip">
+      <div class="chat-guide-arrow"></div>
+      <div class="stock-guide-badge" style="color:#7ec8e3;">🤖 Trợ lý AI của bạn</div>
+      <p class="stock-guide-desc">Đây là <strong>AlphaQuant AI</strong> — trợ lý giúp bạn hiểu các chỉ số, thuật ngữ và phân tích rủi ro chứng khoán dễ dàng hơn.</p>
+      <p class="stock-guide-hint">Nhấn vào icon để thử ngay · ESC để bỏ qua</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const spotlight = overlay.querySelector('#chatGuideSpotlight');
+  const tooltip   = overlay.querySelector('#chatGuideTooltip');
+
+  function positionElements() {
+    const r  = fab.getBoundingClientRect();
+    const pad = 18;
+    const cx  = r.left + r.width  / 2;
+    const cy  = r.top  + r.height / 2;
+
+    // Spotlight tròn — tâm trùng FAB, pad đều 4 phía
+    const size = Math.max(r.width, r.height) + pad * 2;
+    spotlight.style.width        = size + 'px';
+    spotlight.style.height       = size + 'px';
+    spotlight.style.left         = (cx - size / 2) + 'px';
+    spotlight.style.top          = (cy - size / 2) + 'px';
+    spotlight.style.borderRadius = '50%';
+    spotlight.style.borderColor  = '#7ec8e3';
+    spotlight.style.boxShadow    = '0 0 0 9999px rgba(6,11,20,0.85), 0 0 0 3px #7ec8e380';
+
+    // Tooltip — đo thực tế chiều cao sau khi render
+    const tooltipW = 230;
+    tooltip.style.width     = tooltipW + 'px';
+    tooltip.style.left      = '-9999px'; // render ngoài màn để đo
+    tooltip.style.top       = '-9999px';
+    tooltip.style.visibility = 'hidden';
+
+    // Dùng requestAnimationFrame để đo sau khi browser layout
+    requestAnimationFrame(() => {
+      const tooltipH = tooltip.offsetHeight;
+      let tLeft = r.left - tooltipW - 20;
+      let tTop  = cy - tooltipH / 2;
+      const arrow = tooltip.querySelector('.chat-guide-arrow');
+
+      if (tLeft < 10) {
+        // Không đủ chỗ bên trái → đặt tooltip phía TRÊN FAB
+        tLeft = Math.max(10, Math.min(r.right - tooltipW, window.innerWidth - tooltipW - 10));
+        tTop  = Math.max(10, r.top - tooltipH - 16);
+
+        // Đổi mũi tên trỏ XUỐNG (dưới tooltip)
+        if (arrow) {
+          arrow.style.top         = 'auto';
+          arrow.style.bottom      = '-9px';
+          arrow.style.right       = 'auto';
+          arrow.style.left        = (r.left + r.width / 2 - tLeft - 9) + 'px';
+          arrow.style.transform   = 'none';
+          arrow.style.borderLeft  = '9px solid transparent';
+          arrow.style.borderRight = '9px solid transparent';
+          arrow.style.borderTop   = '10px solid #7ec8e355';
+          arrow.style.borderBottom = 'none';
+        }
+      } else {
+        // Đủ chỗ bên trái → layout mặc định, mũi tên trỏ sang phải
+        tLeft = Math.max(10, tLeft);
+        tTop  = Math.max(10, Math.min(tTop, window.innerHeight - tooltipH - 54));
+        if (arrow) {
+          arrow.style.top         = Math.max(16, cy - tTop - 8) + 'px';
+          arrow.style.bottom      = 'auto';
+          arrow.style.right       = '-10px';
+          arrow.style.left        = 'auto';
+          arrow.style.transform   = 'translateY(-50%)';
+          arrow.style.borderLeft  = '10px solid #7ec8e355';
+          arrow.style.borderRight = 'none';
+          arrow.style.borderTop   = '8px solid transparent';
+          arrow.style.borderBottom = '8px solid transparent';
+        }
+      }
+
+      tooltip.style.left       = tLeft + 'px';
+      tooltip.style.top        = tTop  + 'px';
+      tooltip.style.visibility = 'visible';
+    });
+  }
+
+  // Scroll về đầu trang trước khi lock
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  positionElements();
+  window.addEventListener('resize', positionElements);
+  document.body.style.overflow = 'hidden';
+
+  function close() {
+    overlay.classList.add('hidden');
+    window.removeEventListener('resize', positionElements);
+    document.body.style.overflow = '';
+  }
+
+  overlay.style.pointerEvents = 'auto';
+  spotlight.style.pointerEvents = 'auto';
+  spotlight.style.cursor = 'pointer';
+  spotlight.addEventListener('click', () => { close(); fab.click(); });
+
+  overlay.addEventListener('click', e => {
+    if (!spotlight.contains(e.target) && !tooltip.contains(e.target)) close();
+  });
+
+  document.addEventListener('keydown', function onEsc(e) {
+    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); }
+  });
+}
+
 const STATE = {
   stocks:     {},
   glossary:   [],
-  selected:   'VNM',
+  selected:   null,
   period:     180,
   compareSet: new Set(),
   allData:    {},
@@ -208,40 +383,6 @@ function initWatchlist() {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   7. SIDEBAR — STOCK SELECT + COMPARE
-   ═══════════════════════════════════════════════════════════════════════ */
-function buildSidebar() {
-  const sel = document.getElementById('stockSelect');
-  for (const [ticker, info] of Object.entries(STATE.stocks)) {
-    const opt = document.createElement('option');
-    opt.value = ticker;
-    opt.textContent = `${ticker} — ${info.name}`;
-    sel.appendChild(opt);
-  }
-  sel.value = STATE.selected;
-  sel.addEventListener('change', () => {
-    STATE.selected = sel.value;
-    STATE.compareSet.delete(sel.value);
-    buildCompareList();
-    renderWatchlist();
-    render();
-  });
-
-  const slider  = document.getElementById('periodSlider');
-  const periods = [30, 60, 90, 180, 365];
-  slider.min = 0; slider.max = periods.length - 1;
-  slider.value = periods.indexOf(STATE.period);
-  const label = document.getElementById('periodLabel');
-  label.textContent = `${STATE.period} ngày`;
-  slider.addEventListener('input', () => {
-    STATE.period = periods[+slider.value];
-    label.textContent = `${STATE.period} ngày`;
-    render();
-  });
-
-  buildCompareList();
-}
 
 function buildCompareList() {
   const container = document.getElementById('compareList');
@@ -364,6 +505,7 @@ function setText(id, value) {
 }
 
 function render() {
+  if (!STATE.selected) return;
   const rows = STATE.allData[STATE.selected].slice(-STATE.period);
   const m    = computeMetrics(rows);
   renderMetrics(m);
@@ -564,6 +706,7 @@ function buildGlossary() {
    14. INIT
    ═══════════════════════════════════════════════════════════════════════ */
 async function init() {
+  window.scrollTo({ top: 0, behavior: 'instant' });
   const res       = await fetch('stocks.json');
   const json      = await res.json();
   STATE.stocks    = json.stocks;
@@ -575,6 +718,7 @@ async function init() {
   }
 
   initTabs();
+  initGuideOverlay();
   buildSidebar();
   initAIAnalysis();
   buildGlossary();
@@ -591,17 +735,20 @@ async function init() {
   setTimeout(() => overlay.remove(), 500);
 
 
-  /* ── Dropdown: giữ 0.5s sau khi chuột rời ── */
-  document.querySelectorAll('.topnav-dropdown-wrap').forEach(wrap => {
-    let closeTimer = null;
+/* ── Dropdown: hover qua item khác → đóng cũ, mở mới ngay, không bị gap ── */
+  const allWraps = document.querySelectorAll('.topnav-dropdown-wrap');
+  allWraps.forEach(wrap => {
     wrap.addEventListener('mouseenter', () => {
-      clearTimeout(closeTimer);
+      allWraps.forEach(w => w.querySelector('.topnav-dropdown').classList.remove('dropdown-open'));
       wrap.querySelector('.topnav-dropdown').classList.add('dropdown-open');
     });
-    wrap.addEventListener('mouseleave', () => {
-      closeTimer = setTimeout(() => {
-        wrap.querySelector('.topnav-dropdown').classList.remove('dropdown-open');
-      }, 500);
+    wrap.addEventListener('mouseleave', e => {
+      const to = e.relatedTarget;
+      // Không đóng nếu chuột đang đi vào chính dropdown của wrap này
+      if (wrap.contains(to)) return;
+      // Không đóng nếu chuột sang wrap khác (sẽ tự mở cái mới)
+      if (to?.closest('.topnav-dropdown-wrap')) return;
+      wrap.querySelector('.topnav-dropdown').classList.remove('dropdown-open');
     });
   });
 }
@@ -619,14 +766,20 @@ window.addEventListener('DOMContentLoaded', init);
   const sendBtn    = document.getElementById('chatSendBtn');
   const msgBox     = document.getElementById('chatMessages');
 
-  /* Tooltip tự ẩn */
   const tooltip = document.getElementById('chatTooltip');
   const tooltipClose = document.getElementById('chatTooltipClose');
   const hideTooltip = () => tooltip?.classList.add('hidden');
+  const showTooltip = () => {
+    tooltip?.classList.remove('hidden');
+    setTimeout(hideTooltip, 7000);
+  };
 
-  tooltipClose.addEventListener('click', hideTooltip);
-  fab.addEventListener('click', hideTooltip);          // mở chat → ẩn tooltip
-  setTimeout(hideTooltip, 7000);                        // tự ẩn sau 7 giây
+  hideTooltip(); // ẩn từ đầu, chờ guide đóng mới hiện
+  tooltipClose?.addEventListener('click', hideTooltip);
+  fab.addEventListener('click', hideTooltip);
+
+  // Expose để initGuideOverlay gọi sau khi đóng guide
+  window._showChatTooltip = showTooltip;
 
   // history gửi lên API (không gồm system prompt)
   const history = [];
@@ -761,3 +914,69 @@ async function askAI(userText) {
   sendBtn.addEventListener('click', handleSend);
   input.addEventListener('keydown', e => { if (e.key === 'Enter') handleSend(); });
 })();
+
+function buildSidebar() {
+  const sel = document.getElementById('stockSelect');
+
+  // Sync mobile select
+  const selMobile = document.getElementById('stockSelectMobile');
+  if (selMobile) {
+    const placeholderM = document.createElement('option');
+    placeholderM.value = ''; placeholderM.textContent = '— Chọn cổ phiếu —';
+    placeholderM.disabled = true; placeholderM.selected = true;
+    selMobile.appendChild(placeholderM);
+    for (const [ticker, info] of Object.entries(STATE.stocks)) {
+      const opt = document.createElement('option');
+      opt.value = ticker;
+      opt.textContent = `${ticker} — ${info.name}`;
+      selMobile.appendChild(opt);
+    }
+    selMobile.addEventListener('change', () => {
+      STATE.selected = selMobile.value;
+      sel.value = selMobile.value;
+      STATE.compareSet.delete(selMobile.value);
+      buildCompareList();
+      renderWatchlist();
+      render();
+    });
+  }
+
+  // Placeholder option
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = '— Chọn cổ phiếu —';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  sel.appendChild(placeholder);
+
+  for (const [ticker, info] of Object.entries(STATE.stocks)) {
+    const opt = document.createElement('option');
+    opt.value = ticker;
+    opt.textContent = `${ticker} — ${info.name}`;
+    sel.appendChild(opt);
+  }
+
+  sel.value = STATE.selected || '';
+
+  sel.addEventListener('change', () => {
+    STATE.selected = sel.value;
+    STATE.compareSet.delete(sel.value);
+    buildCompareList();
+    renderWatchlist();
+    render();
+  });
+
+  const slider  = document.getElementById('periodSlider');
+  const periods = [30, 60, 90, 180, 365];
+  slider.min = 0; slider.max = periods.length - 1;
+  slider.value = periods.indexOf(STATE.period);
+  const label = document.getElementById('periodLabel');
+  label.textContent = `${STATE.period} ngày`;
+  slider.addEventListener('input', () => {
+    STATE.period = periods[+slider.value];
+    label.textContent = `${STATE.period} ngày`;
+    render();
+  });
+
+  buildCompareList();
+}

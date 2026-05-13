@@ -37,6 +37,19 @@
 </head>
 <body class="bg-bg text-white font-body">
 
+<!-- ─── STOCK GUIDE OVERLAY ──────────────────────────────────────────── -->
+<div id="stockGuideOverlay" class="stock-guide-overlay">
+  <!-- Spotlight: div bám theo #stockSelect, box-shadow làm tối xung quanh -->
+  <div id="stockGuideSpotlight" class="stock-guide-spotlight"></div>
+  <!-- Tooltip chỉ dẫn -->
+  <div id="stockGuideTooltip" class="stock-guide-tooltip">
+    <div class="stock-guide-tooltip-arrow"></div>
+    <div class="stock-guide-badge">📌 Bước đầu tiên</div>
+    <p class="stock-guide-desc">Nhấn vào đây để chọn mã cổ phiếu bạn muốn phân tích.</p>
+    <p class="stock-guide-hint">Nhấn ESC hoặc click ngoài để bỏ qua</p>
+  </div>
+</div>
+
 <!-- ─── LOADING OVERLAY ─────────────────────────────────────────────── -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-wordmark">⚡ ALPHAQUANT</div>
@@ -158,7 +171,7 @@
       <!-- HỆ THỐNG -->
       <div class="topnav-dropdown-wrap">
         <a href="#" class="topnav-nav-item">Hệ thống</a>
-        <div class="topnav-dropdown dropdown-right">
+        <div class="topnav-dropdown">
           <div class="dropdown-col">
             <p class="dropdown-heading">HỆ THỐNG</p>
             <a href="#" onclick="openModal('login');return false;">Đăng nhập</a>
@@ -209,6 +222,8 @@
         <div class="select-wrapper">
           <select id="stockSelect"></select>
         </div>
+
+        
       </div>
 
       <div class="sidebar-field">
@@ -237,6 +252,11 @@
 
   <!-- ─── MAIN CONTENT ──────────────────────────────────────────────── -->
   <main class="main">
+
+    <div class="mobile-stock-bar">
+      <span class="mobile-stock-label">📌 Cổ phiếu:</span>
+      <select id="stockSelectMobile"></select>
+    </div>
 
     <!-- TABS -->
     <div class="tabs">
