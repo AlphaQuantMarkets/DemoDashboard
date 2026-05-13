@@ -659,6 +659,8 @@ Các chỉ số hỗ trợ: Volatility, Sharpe Ratio, Beta, Max Drawdown, Rollin
   }
 
   /* Gọi Anthropic API */
+
+/* Comment  để lúc sau call API cũng được
   async function askAI(userText) {
     history.push({ role: 'user', content: userText });
 
@@ -691,6 +693,60 @@ Các chỉ số hỗ trợ: Volatility, Sharpe Ratio, Beta, Max Drawdown, Rollin
       sendBtn.disabled = false;
       input.focus();
     }
+  }
+
+*/
+
+const FAKE_RESPONSES = [
+    // Lượt 1 — ATO
+    `Mình lấy ví dụ cho bạn dễ hình dung nhé! ATO giống như bạn đứng xếp hàng trước cửa store Apple vào ngày mở bán iPhone mới ấy. Thay vì mặc cả giá, bạn chỉ việc đưa tiền cho nhân viên và bảo: "Bất kể sáng nay cửa hàng mở bán giá bao nhiêu, mình chốt luôn một cái, lấy ngay lúc mở cửa!"\n\n📌 <b>ATO (At The Opening)</b>: Là lệnh ưu tiên mua hoặc bán bằng mọi giá ngay khi thị trường vừa "mở mắt" (thường là <b>9h – 9h15 sáng</b>).\n\n• Bạn không cần ghi mức giá cụ thể — cứ ghi <b>"ATO"</b> vào ô mức giá là xong.\n• Nó có <b>quyền ưu tiên cao nhất</b>, kiểu gì cũng được khớp trước mấy người đang ngồi mặc cả từng đồng.`,
+
+    // Lượt 2 — Volatility
+    `<b>Volatility</b> cao không phải xấu hay tốt — nó phụ thuộc vào <b>khẩu vị rủi ro</b> của bạn.\n\nMình lấy ví dụ cho dễ hiểu: Volatility giống như <b>"độ rung của con thuyền"</b>. Thuyền rung mạnh thì người sợ nước sẽ nôn, nhưng dân mạo hiểm lại thích.\n\n• <b>Bạn mới bắt đầu?</b> → Chọn cổ phiếu <b>Volatility &lt; 20%</b> trước — ít biến động, dễ ngủ yên.\n• <b>Đã có kinh nghiệm hơn?</b> → Volatility cao = cơ hội cao, nhưng phải <b>đặt stop-loss</b> và không bỏ tất cả trứng vào một rổ.\n\n💡 <i>Bí quyết của mình</i>: Chỉ vào cổ phiếu Volatility cao khi <b>Sharpe Ratio &gt; 1.5</b> — tức lợi nhuận phải xứng đáng với rủi ro bạn đã chấp nhận. Nếu không, mình chuyển sang mã khác ngay.`
+  ];
+
+  let fakeMsgCount = 0;
+
+async function askAI(userText) {
+    history.push({ role: 'user', content: userText });
+
+    sendBtn.disabled = true;
+
+    // Tạo bubble AI với span rỗng trước
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-msg ai';
+    const span = document.createElement('span');
+    wrap.appendChild(span);
+    msgBox.appendChild(wrap);
+    msgBox.scrollTop = msgBox.scrollHeight;
+
+    const raw = FAKE_RESPONSES[Math.min(fakeMsgCount, FAKE_RESPONSES.length - 1)];
+    fakeMsgCount++;
+
+    // Tách thành các "token" — giữ nguyên tag HTML, tách từng ký tự text
+    const tokens = [];
+    let buffer = '';
+    let inTag = false;
+    for (const ch of raw) {
+      if (ch === '<') { if (buffer) { tokens.push(...buffer.split('')); buffer = ''; } inTag = true; buffer += ch; }
+      else if (ch === '>') { buffer += ch; tokens.push(buffer); buffer = ''; inTag = false; }
+      else if (inTag) { buffer += ch; }
+      else { buffer += ch; }
+    }
+    if (buffer) tokens.push(...buffer.split(''));
+
+    // Typing animation — mỗi token delay 18ms
+    let displayed = '';
+    for (const token of tokens) {
+      displayed += token;
+      span.innerHTML = displayed.replace(/\n/g, '<br/>');
+      msgBox.scrollTop = msgBox.scrollHeight;
+      await new Promise(r => setTimeout(r, token.startsWith('<') ? 0 : 18));
+    }
+
+    history.push({ role: 'assistant', content: raw });
+    sendBtn.disabled = false;
+    input.focus();
   }
 
   /* Send */
