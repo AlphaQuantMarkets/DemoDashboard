@@ -118,7 +118,7 @@ function initGuideOverlay() {
     window.removeEventListener('resize', positionSpotlight);
     document.body.style.overflow = '';
     // Chuyển sang guide chatbot
-    setTimeout(initChatbotGuide, 400);
+    setTimeout(initChatbotGuide, 0);
   }
   overlay.style.pointerEvents = 'auto';
   overlay.addEventListener('click', e => {
