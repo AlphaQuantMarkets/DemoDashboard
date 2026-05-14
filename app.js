@@ -77,58 +77,10 @@ function computeMetrics(rows) {
    3. STATE
    ═══════════════════════════════════════════════════════════════════════ */
 function initGuideOverlay() {
-  const overlay   = document.getElementById('stockGuideOverlay');
-  const spotlight = document.getElementById('stockGuideSpotlight');
-  const tooltip   = document.getElementById('stockGuideTooltip');
-  // Trên mobile sidebar bị ẩn → dùng mobile select thay thế
-  const isMobile = window.innerWidth <= 860;
-  const target = isMobile
-    ? document.getElementById('stockSelectMobile')
-    : document.getElementById('stockSelect');
-  if (!overlay || !target) return;
-  function positionSpotlight() {
-    const r   = target.closest('.select-wrapper').getBoundingClientRect();
-    const pad = 8;
 
-    // Spotlight bám ô select
-    spotlight.style.left   = (r.left   - pad) + 'px';
-    spotlight.style.top    = (r.top    - pad) + 'px';
-    spotlight.style.width  = (r.width  + pad * 2) + 'px';
-    spotlight.style.height = (r.height + pad * 2) + 'px';
+  // Nếu guide metrics đã chạy xong thì không chạy lại
+  if (window.__metricsGuideFinished) return;
 
-    // Tooltip bên PHẢI spotlight, mũi tên trỏ sang trái
-    const tooltipLeft = r.right + 24;
-    const tooltipTop  = r.top + (r.height / 2) - 50;
-    tooltip.style.left = tooltipLeft + 'px';
-    tooltip.style.top  = tooltipTop  + 'px';
-  }
-
-  // Scroll về đầu TRƯỚC khi tính position
-  window.scrollTo({ top: 0, behavior: 'instant' });
-  document.body.style.overflow = 'hidden';
-
-  // Đợi 1 frame để browser apply scroll xong rồi mới position
-  requestAnimationFrame(() => {
-    positionSpotlight();
-  });
-  window.addEventListener('resize', positionSpotlight);
-
-  function close() {
-    overlay.classList.add('hidden');
-    window.removeEventListener('resize', positionSpotlight);
-    document.body.style.overflow = '';
-    // Chuyển sang guide chatbot
-    setTimeout(initChatbotGuide, 0);
-  }
-  overlay.style.pointerEvents = 'auto';
-  overlay.addEventListener('click', e => {
-    const inSpot    = spotlight.contains(e.target) || target.contains(e.target);
-    const inTooltip = tooltip.contains(e.target);
-    if (!inSpot && !inTooltip) close();
-  });
-
-  target.addEventListener('change', close);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 }
 
 let _chatGuideShown = false;
@@ -177,6 +129,7 @@ function initChatbotGuide() {
     tooltip.style.left      = '-9999px'; // render ngoài màn để đo
     tooltip.style.top       = '-9999px';
     tooltip.style.visibility = 'hidden';
+
 
     // Dùng requestAnimationFrame để đo sau khi browser layout
     requestAnimationFrame(() => {
@@ -249,6 +202,255 @@ function initChatbotGuide() {
   document.addEventListener('keydown', function onEsc(e) {
     if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); }
   });
+}
+
+function initMetricsGuide() {
+  if (window.__metricsGuideFinished) return;
+
+  const oldOverlay = document.getElementById('metricsGuideOverlay');
+  if (oldOverlay) oldOverlay.remove();
+
+  const STEPS = [
+    {
+      targetId: 'stockSelect',
+      useWrapper: true,
+      title: 'Chọn cổ phiếu',
+      desc: 'Chọn mã cổ phiếu bạn muốn phân tích. Mỗi mã có dữ liệu giá và chỉ số rủi ro riêng biệt.',
+    },
+    {
+      targetId: 'chatFab',
+      useWrapper: false,
+      title: 'Trợ lý AI',
+      desc: 'Trợ lý AI sẵn sàng giải thích bất kỳ chỉ số nào bạn chưa hiểu.',
+      round: true,
+    },
+    {
+      targetId: 'mPriceVal',
+      useWrapper: true,
+      title: 'Giá hiện tại',
+      desc: 'Giá đóng cửa gần nhất của cổ phiếu, kèm mức thay đổi so với phiên trước.',
+    },
+    {
+      targetId: 'mVolVal',
+      useWrapper: true,
+      title: 'Volatility',
+      desc: 'Mức độ dao động giá theo năm. Càng cao thì rủi ro và cơ hội lợi nhuận càng lớn.',
+    },
+    {
+      targetId: 'mSharpeVal',
+      useWrapper: true,
+      title: 'Sharpe Ratio',
+      desc: 'Tỷ suất lợi nhuận điều chỉnh theo rủi ro. Trên 1.0 được xem là hiệu quả.',
+    },
+    {
+      targetId: 'mBetaVal',
+      useWrapper: true,
+      title: 'Beta',
+      desc: 'Độ nhạy cảm của cổ phiếu so với thị trường. Beta < 1 ít biến động hơn thị trường, Beta > 1 biến động mạnh hơn.',
+    },
+    {
+      targetId: 'mDrawdownVal',
+      useWrapper: true,
+      title: 'Max Drawdown',
+      desc: 'Mức giảm sâu nhất từ đỉnh xuống đáy trong kỳ quan sát.',
+    },
+  ];
+
+  const total = STEPS.length;
+  let current = 0;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'metricsGuideOverlay';
+  overlay.className = 'stock-guide-overlay';
+  overlay.innerHTML = `
+    <div id="metricsSpotlight" class="stock-guide-spotlight metrics-spotlight"></div>
+    <div id="metricsTooltip" class="metrics-tooltip">
+      <div class="metrics-tooltip-arrow" id="metricsArrow"></div>
+      <div class="metrics-tooltip-header">
+        <span class="metrics-tooltip-step" id="metricsStep"></span>
+        <button class="metrics-skip-btn" id="metricsSkip">Bỏ qua</button>
+      </div>
+      <div class="metrics-tooltip-title" id="metricsTitle"></div>
+      <p class="metrics-tooltip-desc" id="metricsDesc"></p>
+      <div class="metrics-tooltip-footer">
+        <button class="metrics-next-btn" id="metricsNext">Tiếp theo →</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const spotlight = overlay.querySelector('#metricsSpotlight');
+  const tooltip   = overlay.querySelector('#metricsTooltip');
+  const stepEl    = overlay.querySelector('#metricsStep');
+  const titleEl   = overlay.querySelector('#metricsTitle');
+  const descEl    = overlay.querySelector('#metricsDesc');
+  const nextBtn   = overlay.querySelector('#metricsNext');
+  const skipBtn   = overlay.querySelector('#metricsSkip');
+  const arrow     = overlay.querySelector('#metricsArrow');
+
+  function getTarget(step) {
+    const el = document.getElementById(step.targetId);
+    if (!el) return null;
+    return step.useWrapper ? (el.closest('.metric-card') || el.closest('.select-wrapper') || el) : el;
+  }
+
+  function positionStep(step) {
+    const target = getTarget(step);
+    if (!target) return;
+
+    document.querySelectorAll('.guide-highlight-target').forEach(el => {
+      el.classList.remove('guide-highlight-target');
+      el.style.zIndex = '';
+      el.style.position = '';
+    });
+    target.classList.add('guide-highlight-target');
+    target.style.position = 'relative';
+    target.style.zIndex = '100000';
+
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    requestAnimationFrame(() => {
+      const r   = target.getBoundingClientRect();
+      const pad = step.round ? 18 : 10;
+      const isRound = step.round || false;
+
+      spotlight.style.display     = 'block';
+      spotlight.style.opacity     = '1';
+      spotlight.style.visibility  = 'visible';
+      spotlight.style.pointerEvents = 'none';
+      spotlight.style.zIndex      = '99999';
+      spotlight.style.background  = 'transparent';
+
+      if (isRound) {
+        const size = Math.max(r.width, r.height) + pad * 2;
+        const cx = r.left + r.width / 2;
+        const cy = r.top  + r.height / 2;
+        spotlight.style.width        = size + 'px';
+        spotlight.style.height       = size + 'px';
+        spotlight.style.left         = (cx - size / 2) + 'px';
+        spotlight.style.top          = (cy - size / 2) + 'px';
+        spotlight.style.borderRadius = '50%';
+        spotlight.style.border       = '2px solid #00ff94';
+        spotlight.style.boxShadow    = '0 0 0 9999px rgba(6,11,20,0.82), 0 0 18px rgba(0,255,148,0.55), 0 0 36px rgba(0,255,148,0.30)';
+      } else {
+        spotlight.style.width        = (r.width + pad * 2) + 'px';
+        spotlight.style.height       = (r.height + pad * 2) + 'px';
+        spotlight.style.left         = (r.left - pad) + 'px';
+        spotlight.style.top          = (r.top  - pad) + 'px';
+        spotlight.style.borderRadius = '12px';
+        spotlight.style.border       = '2px solid #00ff94';
+        spotlight.style.boxShadow    = '0 0 0 9999px rgba(6,11,20,0.82), 0 0 18px rgba(0,255,148,0.45), 0 0 36px rgba(0,255,148,0.25)';
+      }
+
+      const tooltipW = 260;
+      tooltip.style.width      = tooltipW + 'px';
+      tooltip.style.visibility = 'hidden';
+      tooltip.style.left       = '-9999px';
+      tooltip.style.top        = '-9999px';
+
+      requestAnimationFrame(() => {
+        const tooltipH    = tooltip.offsetHeight;
+        const spaceRight  = window.innerWidth  - r.right  - 20;
+        const spaceLeft   = r.left - 20;
+        const spaceBottom = window.innerHeight - r.bottom - 20;
+
+        let tLeft, tTop, arrowSide;
+
+        if (spaceRight >= tooltipW + 16) {
+          tLeft = r.right + 16;
+          tTop  = r.top + r.height / 2 - tooltipH / 2;
+          arrowSide = 'left';
+        } else if (spaceLeft >= tooltipW + 16) {
+          tLeft = r.left - tooltipW - 16;
+          tTop  = r.top + r.height / 2 - tooltipH / 2;
+          arrowSide = 'right';
+        } else if (spaceBottom >= tooltipH + 16) {
+          tLeft = r.left + r.width / 2 - tooltipW / 2;
+          tTop  = r.bottom + 16;
+          arrowSide = 'top';
+        } else {
+          tLeft = r.left + r.width / 2 - tooltipW / 2;
+          tTop  = r.top - tooltipH - 16;
+          arrowSide = 'bottom';
+        }
+
+        tLeft = Math.max(10, Math.min(tLeft, window.innerWidth  - tooltipW - 10));
+        tTop  = Math.max(10, Math.min(tTop,  window.innerHeight - tooltipH - 54));
+
+        tooltip.style.left       = tLeft + 'px';
+        tooltip.style.top        = tTop  + 'px';
+        tooltip.style.visibility = 'visible';
+
+        arrow.className = 'metrics-tooltip-arrow metrics-arrow-' + arrowSide;
+        if (arrowSide === 'left') {
+          arrow.style.top  = Math.max(16, (r.top + r.height/2) - tTop - 8) + 'px';
+          arrow.style.left = arrow.style.right = arrow.style.bottom = '';
+        } else if (arrowSide === 'right') {
+          arrow.style.top   = Math.max(16, (r.top + r.height/2) - tTop - 8) + 'px';
+          arrow.style.right = arrow.style.left = arrow.style.bottom = '';
+        } else if (arrowSide === 'top') {
+          arrow.style.left   = Math.max(16, (r.left + r.width/2) - tLeft - 9) + 'px';
+          arrow.style.top    = arrow.style.right = arrow.style.bottom = '';
+        } else {
+          arrow.style.left   = Math.max(16, (r.left + r.width/2) - tLeft - 9) + 'px';
+          arrow.style.bottom = arrow.style.top = arrow.style.right = '';
+        }
+      });
+    });
+  }
+
+  function showStep(index) {
+    const step = STEPS[index];
+    stepEl.textContent  = `${index + 1} / ${total}`;
+    titleEl.textContent = step.title;
+    descEl.textContent  = step.desc;
+    nextBtn.textContent = index === total - 1 ? 'Hoàn thành ✓' : 'Tiếp theo →';
+    positionStep(step);
+  }
+
+  let _closed = false;
+  function close() {
+    if (_closed) return;
+    _closed = true;
+
+    const spl = document.getElementById('metricsSpotlight');
+    if (spl) { spl.style.boxShadow = 'none'; spl.style.display = 'none'; }
+
+    document.querySelectorAll('.guide-highlight-target').forEach(el => {
+      el.classList.remove('guide-highlight-target');
+      el.style.zIndex = '';
+      el.style.position = '';
+    });
+
+    document.body.style.overflow = '';
+    document.querySelectorAll('#metricsGuideOverlay').forEach(el => el.remove());
+    document.querySelectorAll('#chatGuideOverlay').forEach(el => el.remove());
+    window.removeEventListener('resize', onResize);
+    window.__metricsGuideFinished = true;
+  }
+
+  function onResize() { positionStep(STEPS[current]); }
+
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  document.body.style.overflow = 'hidden';
+  overlay.style.pointerEvents  = 'auto';
+  tooltip.style.visibility     = 'visible';
+
+  requestAnimationFrame(() => showStep(0));
+
+  nextBtn.addEventListener('click', () => {
+    if (current < total - 1) { current++; showStep(current); }
+    else { close(); }
+  });
+
+  skipBtn.addEventListener('click', close);
+
+  document.addEventListener('keydown', function onKey(e) {
+    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); }
+    if (e.key === 'ArrowRight' && current < total - 1) { current++; showStep(current); }
+  });
+
+  window.addEventListener('resize', onResize);
 }
 
 const STATE = {
@@ -718,8 +920,8 @@ async function init() {
   }
 
   initTabs();
-  initGuideOverlay();
   buildSidebar();
+  initMetricsGuide();
   initAIAnalysis();
   buildGlossary();
   initSearch();
