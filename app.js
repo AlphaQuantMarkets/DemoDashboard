@@ -921,7 +921,6 @@ async function init() {
 
   initTabs();
   buildSidebar();
-  initMetricsGuide();
   initAIAnalysis();
   buildGlossary();
   initSearch();
@@ -931,10 +930,18 @@ async function init() {
   updateClock();
   setInterval(updateClock, 1000);
 
-  /* Hide loader */
+   /* Hide loader — tối thiểu 1000ms, guide chỉ chạy sau khi loader ẩn xong */
   const overlay = document.getElementById('loadingOverlay');
-  overlay.classList.add('hidden');
-  setTimeout(() => overlay.remove(), 500);
+  const loadStart = window.__loadStart || Date.now();
+  const elapsed = Date.now() - loadStart;
+  const remaining = Math.max(0, 1000 - elapsed);
+  setTimeout(() => {
+    overlay.classList.add('hidden');
+    setTimeout(() => {
+      overlay.remove();
+      initMetricsGuide();
+    }, 500);
+  }, remaining);
 
 
 /* ── Dropdown: hover qua item khác → đóng cũ, mở mới ngay, không bị gap ── */
