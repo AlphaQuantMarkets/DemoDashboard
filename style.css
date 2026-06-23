@@ -6,6 +6,7 @@
   --bg:         #060b14;
   --bg2:        #0a1628;
   --bg3:        #0d1f35;
+  --bg-behind-banner: #061021;
   --border:     #00ff9428;
   --border-lit: #00ff94;
   --green:      #00ff94;
@@ -53,7 +54,7 @@ body {
   align-items: center;
   padding: 10px 24px 8px;
   gap: 6px;
-  background: var(--bg);
+  background: var(--bg-behind-banner);
   border-bottom: 1px solid var(--border);
 }
 
@@ -77,8 +78,8 @@ body {
   border-bottom-color: transparent;
 } */
 .topnav-banner-img {
-  width: 100%;
-  height: 220px;
+  width: 50%;
+  height: 100px;
   object-fit: cover;
   object-position: center 50%;
   border-radius: 8px;
