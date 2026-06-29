@@ -5,7 +5,9 @@
     "HPG": { "name": "Hòa Phát", "seed": 2 },
     "FPT": { "name": "FPT Corp", "seed": 3 },
     "MWG": { "name": "Mobile World", "seed": 4 },
-    "VHM": { "name": "Vinhomes", "seed": 5 }
+    "VHM": { "name": "Vinhomes", "seed": 5 },
+    "TCB": { "name": "Techcombank", "seed": 6 },
+    "MBB": { "name": "MB Bank", "seed": 7 }
   },
   "glossary": [
     {

@@ -1060,10 +1060,16 @@ function initProductGuidePanel() {
   panel.setAttribute('aria-live', 'polite');
   panel.innerHTML = `
     <div class="product-guide-kicker">Tính năng sản phẩm</div>
-    <div class="product-guide-category"></div>
-    <div class="product-guide-title"></div>
-    <div class="product-guide-summary"></div>
-    <div class="product-guide-example"></div>
+
+    <div class="product-guide-summary">
+      <strong class="product-guide-content_title">Description:</strong>
+      <span class="product-guide-summary-text"></span>
+    </div>
+
+    <div class="product-guide-example">
+      <strong class="product-guide-content_title">Example:</strong>
+      <span class="product-guide-example-text"></span>
+    </div>
   `;
   document.body.appendChild(panel);
 
@@ -1071,10 +1077,9 @@ function initProductGuidePanel() {
   let activeGuide = null;
   let hideTimer = null;
 
-  const categoryEl = panel.querySelector('.product-guide-category');
-  const titleEl = panel.querySelector('.product-guide-title');
-  const summaryEl = panel.querySelector('.product-guide-summary');
-  const exampleEl = panel.querySelector('.product-guide-example');
+
+  const summaryEl = panel.querySelector('.product-guide-summary-text');
+  const exampleEl = panel.querySelector('.product-guide-example-text');
 
   function findGuideTarget(node) {
     if (!node || node === document || node === window) return null;
@@ -1089,10 +1094,10 @@ function initProductGuidePanel() {
     clearTimeout(hideTimer);
     activeGuide = guide;
     activeTarget = target;
-    categoryEl.textContent = guide.category || 'Tính năng';
-    titleEl.textContent = guide.title;
+
     summaryEl.textContent = guide.summary || guide.how || '';
     exampleEl.textContent = guide.example || '';
+
     panel.classList.add('visible');
   }
 

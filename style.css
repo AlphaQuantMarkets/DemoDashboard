@@ -2072,3 +2072,7 @@ input[type=range] {
   /* Search ẩn hẳn */
   .topnav-search { display: none; }
 }
+
+.product-guide-content_title {
+  color: tomato;
+}
