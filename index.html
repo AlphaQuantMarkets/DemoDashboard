@@ -254,6 +254,7 @@
       <button class="tab-btn"        data-tab="tab5">Phân Tích AI</button>
       <button class="tab-btn"        data-tab="tab3">Thuật ngữ</button>
       <button class="tab-btn"        data-tab="tab4">Cộng đồng</button>
+      <button class="tab-btn"        data-tab="tab6">SCK giả lập (Market Replay)</button>
     </div>
 
     <!-- ══════ TAB 1 ══════════════════════════════════════════════════ -->
@@ -523,6 +524,117 @@
           </div>
         </section>
       </div>
+    </div>
+    <!-- TAB 6 -->
+    <div class="tab-panel" id="tab6">
+
+        <div class="metrics-row">
+            <div class="metric-card">
+                <div class="metric-label">Giá hiện tại</div>
+                <div class="metric-value" id="simPriceVal">—</div>
+                <div class="metric-sub" id="simPriceSub">—</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Volatility</div>
+                <div class="metric-value" id="simVolVal">—</div>
+                <div class="metric-sub" id="simVolSub">Annualized</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Sharpe Ratio</div>
+                <div class="metric-value" id="simSharpeVal">—</div>
+                <div class="metric-sub" id="simSharpeSub">Replay realtime</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Beta</div>
+                <div class="metric-value" id="simBetaVal">—</div>
+                <div class="metric-sub" id="simBetaSub">vs VN-Index</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Max Drawdown</div>
+                <div class="metric-value" id="simDrawdownVal">—</div>
+                <div class="metric-sub" id="simDrawdownSub">Replay history</div>
+            </div>
+        </div>
+
+
+        <div class="risk-row">
+            <span class="risk-row-label">Risk Level:</span>
+            <span class="risk-badge risk-low" id="simRiskBadge">—</span>
+        </div>
+
+
+        <div class="section-title">
+            🎬 Market Replay
+        </div>
+
+        <div class="chart-box">
+
+            <div class="replay-toolbar">
+
+                <button id="replayBackBtn">⏮</button>
+
+                <button id="replayPauseBtn">⏸</button>
+
+                <button id="replayPlayBtn">▶</button>
+
+                <button id="replayForwardBtn">⏭</button>
+
+                <input
+                    id="replaySlider"
+                    type="range"
+                    min="1"
+                    max="365"
+                    value="365"
+                >
+
+                <span id="replayDayLabel">
+                    Day 365 / 365
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="section-title">
+            Biến động giá
+        </div>
+
+        <div class="chart-box">
+            <div id="simChartCandle"></div>
+        </div>
+
+
+        <div class="charts-bottom">
+
+            <div>
+                <div class="section-title">Khối lượng</div>
+
+                <div class="chart-box">
+                    <div id="simChartVolume"></div>
+                </div>
+            </div>
+
+            <div>
+
+                <div class="section-title">
+                    Giá + Rolling Volatility
+                </div>
+
+                <div class="chart-box">
+                    <div id="simChartLine"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+      
     </div>
 
   </main>

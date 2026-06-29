@@ -50,8 +50,8 @@ function generateStockData(ticker, days = 365) {
 function computeMetrics(rows) {
   const closes  = rows.map(r => r.close);
   const rets    = closes.slice(1).map((c, i) => (c - closes[i]) / closes[i]);
-  const mean    = rets.reduce((a, v) => a + v, 0) / rets.length;
-  const variance= rets.reduce((a, v) => a + (v - mean) ** 2, 0) / rets.length;
+  const mean    = rets.length ? rets.reduce((a, v) => a + v, 0) / rets.length : 0;
+  const variance= rets.length ? rets.reduce((a, v) => a + (v - mean) ** 2, 0) / rets.length : 0;
   const std     = Math.sqrt(variance);
   const volAnn  = std * Math.sqrt(252);
   const sharpe  = (mean * 252) / (std * Math.sqrt(252) + 1e-9);
@@ -64,7 +64,7 @@ function computeMetrics(rows) {
     if (dd < maxDD) maxDD = dd;
   }
   const current   = closes.at(-1);
-  const prev      = closes.at(-2);
+  const prev      = closes.at(-2) ?? current;
   const changePct = ((current - prev) / prev) * 100;
   let riskLevel, riskClass;
   if      (volAnn < 0.20) { riskLevel = 'THẤP / LOW';          riskClass = 'low'; }
@@ -456,11 +456,17 @@ function initMetricsGuide() {
 const STATE = {
   stocks:     {},
   glossary:   [],
+  guides:     [],
   selected:   null,
   period:     180,
   compareSet: new Set(),
   allData:    {},
   watchlist:  ['FPT', 'HPG'],   // default watchlist
+  replay:     {
+    day: 365,
+    timer: null,
+    speedMs: 500,
+  },
 };
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -620,6 +626,14 @@ function updateClock() {
   });
 }
 
+function resizeCharts(ids) {
+  if (!window.Plotly?.Plots?.resize) return;
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) Plotly.Plots.resize(el);
+  });
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    9. TABS
    ═══════════════════════════════════════════════════════════════════════ */
@@ -630,6 +644,12 @@ function initTabs() {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById(btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'tab6') {
+        requestAnimationFrame(() => {
+          renderReplay();
+          resizeCharts(['simChartCandle', 'simChartVolume', 'simChartLine']);
+        });
+      }
     });
   });
 }
@@ -717,28 +737,30 @@ function render() {
   renderPriceLine(rows);
   renderComparison();
   renderAIAnalysis();
+  renderReplay();
 }
 
-function renderMetrics(m) {
+function renderMetrics(m, prefix = 'm', labels = {}) {
   const cards = [
     { id: 'mPrice',    value: m.current.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
       sub: `${m.changePct >= 0 ? '🔺' : '🔻'} ${m.changePct >= 0 ? '+' : ''}${m.changePct.toFixed(2)}%`,
       color: m.changePct >= 0 ? 'var(--green)' : 'var(--red)' },
-    { id: 'mVol',      value: `${(m.volAnn * 100).toFixed(1)}%`, sub: 'Annualized', color: 'var(--green)' },
-    { id: 'mSharpe',   value: m.sharpe.toFixed(2), sub: '> 1.0 là tốt', color: 'var(--green)' },
-    { id: 'mBeta',     value: m.beta.toFixed(2),   sub: '< 1: ít rủi ro', color: 'var(--amber)' },
-    { id: 'mDrawdown', value: `${(m.maxDD * 100).toFixed(1)}%`, sub: 'Mức giảm tối đa', color: 'var(--red)' },
+    { id: 'mVol',      value: `${(m.volAnn * 100).toFixed(1)}%`, sub: labels.volSub ?? 'Annualized', color: 'var(--green)' },
+    { id: 'mSharpe',   value: m.sharpe.toFixed(2), sub: labels.sharpeSub ?? '> 1.0 là tốt', color: 'var(--green)' },
+    { id: 'mBeta',     value: m.beta.toFixed(2),   sub: labels.betaSub ?? '< 1: ít rủi ro', color: 'var(--amber)' },
+    { id: 'mDrawdown', value: `${(m.maxDD * 100).toFixed(1)}%`, sub: labels.drawdownSub ?? 'Mức giảm tối đa', color: 'var(--red)' },
   ];
   for (const c of cards) {
-    const valEl = document.getElementById(c.id + 'Val');
-    const subEl = document.getElementById(c.id + 'Sub');
+    const id = prefix + c.id.slice(1);
+    const valEl = document.getElementById(id + 'Val');
+    const subEl = document.getElementById(id + 'Sub');
     if (valEl) { valEl.textContent = c.value; valEl.style.color = c.color; }
     if (subEl)   subEl.textContent = c.sub;
   }
 }
 
-function renderRiskBadge(m) {
-  const el = document.getElementById('riskBadge');
+function renderRiskBadge(m, targetId = 'riskBadge') {
+  const el = document.getElementById(targetId);
   if (!el) return;
   el.textContent = m.riskLevel;
   el.className   = `risk-badge risk-${m.riskClass}`;
@@ -758,7 +780,7 @@ const LAYOUT_BASE = {
 };
 const CONFIG = { displayModeBar: false, responsive: true };
 
-function renderCandlestick(rows) {
+function renderCandlestick(rows, targetId = 'chartCandle', name = STATE.selected) {
   const trace = {
     type: 'candlestick',
     x: rows.map(r => r.date),
@@ -768,9 +790,9 @@ function renderCandlestick(rows) {
     close: rows.map(r => r.close),
     increasing: { line: { color: '#00ff94' }, fillcolor: '#00ff9450' },
     decreasing: { line: { color: '#ff4b4b' }, fillcolor: '#ff4b4b50' },
-    name: STATE.selected,
+    name,
   };
-  Plotly.react('chartCandle', [trace], {
+  Plotly.react(targetId, [trace], {
     ...LAYOUT_BASE, height: 300,
     xaxis:  { ...LAYOUT_BASE.xaxis, rangeslider: { visible: false } },
     yaxis:  { ...LAYOUT_BASE.yaxis, title: { text: 'Giá (nghìn VNĐ)', font: { size: 10 } } },
@@ -778,20 +800,20 @@ function renderCandlestick(rows) {
   }, CONFIG);
 }
 
-function renderVolume(rows) {
+function renderVolume(rows, targetId = 'chartVolume') {
   const trace = {
     type: 'bar',
     x: rows.map(r => r.date), y: rows.map(r => r.volume),
     marker: { color: rows.map(r => r.close >= r.open ? '#00ff94' : '#ff4b4b'), opacity: 0.8 },
   };
-  Plotly.react('chartVolume', [trace], {
+  Plotly.react(targetId, [trace], {
     ...LAYOUT_BASE, height: 190,
     margin: { l: 60, r: 20, t: 10, b: 40 },
     yaxis:  { ...LAYOUT_BASE.yaxis, title: { text: 'KL', font: { size: 10 } } },
   }, CONFIG);
 }
 
-function renderPriceLine(rows) {
+function renderPriceLine(rows, targetId = 'chartLine') {
   const closes = rows.map(r => r.close);
   const dates  = rows.map(r => r.date);
   const rets   = closes.slice(1).map((c, i) => (c - closes[i]) / closes[i]);
@@ -806,7 +828,7 @@ function renderPriceLine(rows) {
                name: 'Giá / Price', line: { color: '#00ff94', width: 2 } };
   const t2 = { type: 'scatter', mode: 'lines', x: dates.slice(1), y: rollVol,
                name: 'Volatility 20D (%)', line: { color: '#f5a623', width: 1.5, dash: 'dot' }, yaxis: 'y2' };
-  Plotly.react('chartLine', [t1, t2], {
+  Plotly.react(targetId, [t1, t2], {
     ...LAYOUT_BASE, height: 190, showlegend: true,
     legend: { orientation: 'h', y: 1.18, font: { size: 10 } },
     margin: { l: 55, r: 55, t: 24, b: 40 },
@@ -814,6 +836,116 @@ function renderPriceLine(rows) {
     yaxis2: { title: { text: 'Volatility %', font: { size: 10 } }, overlaying: 'y', side: 'right',
               gridcolor: '#0d2137', showgrid: false, tickfont: { size: 10 } },
   }, CONFIG);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   11B. MARKET REPLAY
+   ═══════════════════════════════════════════════════════════════════════ */
+function getReplayMaxDay() {
+  const rows = STATE.allData[STATE.selected] || [];
+  return rows.length || 1;
+}
+
+function clampReplayDay(day) {
+  const maxDay = getReplayMaxDay();
+  return Math.min(maxDay, Math.max(1, Number(day) || 1));
+}
+
+function getReplayRows() {
+  const rows = STATE.allData[STATE.selected] || [];
+  const day = clampReplayDay(STATE.replay.day);
+  STATE.replay.day = day;
+  return rows.slice(0, Math.min(day + 1, rows.length));
+}
+
+function setReplayPlaying(isPlaying) {
+  const playBtn = document.getElementById('replayPlayBtn');
+  const pauseBtn = document.getElementById('replayPauseBtn');
+  if (playBtn) playBtn.disabled = isPlaying;
+  if (pauseBtn) pauseBtn.disabled = !isPlaying;
+}
+
+function pauseReplay() {
+  if (STATE.replay.timer) {
+    clearInterval(STATE.replay.timer);
+    STATE.replay.timer = null;
+  }
+  setReplayPlaying(false);
+}
+
+function setReplayDay(day) {
+  STATE.replay.day = clampReplayDay(day);
+  renderReplay();
+}
+
+function stepReplay(delta) {
+  pauseReplay();
+  setReplayDay(STATE.replay.day + delta);
+}
+
+function playReplay() {
+  if (!STATE.selected || STATE.replay.timer) return;
+  setReplayPlaying(true);
+  STATE.replay.timer = setInterval(() => {
+    const nextDay = clampReplayDay(STATE.replay.day + 1);
+    if (nextDay === STATE.replay.day) {
+      pauseReplay();
+      return;
+    }
+    STATE.replay.day = nextDay;
+    renderReplay();
+  }, STATE.replay.speedMs);
+}
+
+function initReplayControls() {
+  const slider = document.getElementById('replaySlider');
+  const playBtn = document.getElementById('replayPlayBtn');
+  const pauseBtn = document.getElementById('replayPauseBtn');
+  const backBtn = document.getElementById('replayBackBtn');
+  const forwardBtn = document.getElementById('replayForwardBtn');
+
+  if (slider) {
+    slider.addEventListener('input', () => {
+      pauseReplay();
+      setReplayDay(slider.value);
+    });
+  }
+  if (playBtn) playBtn.addEventListener('click', playReplay);
+  if (pauseBtn) pauseBtn.addEventListener('click', pauseReplay);
+  if (backBtn) backBtn.addEventListener('click', () => stepReplay(-1));
+  if (forwardBtn) forwardBtn.addEventListener('click', () => stepReplay(1));
+
+  setReplayPlaying(false);
+}
+
+function renderReplay() {
+  if (!STATE.selected) return;
+
+  const rows = getReplayRows();
+  if (!rows.length) return;
+
+  const maxDay = getReplayMaxDay();
+  const slider = document.getElementById('replaySlider');
+  const label = document.getElementById('replayDayLabel');
+
+  if (slider) {
+    slider.min = 1;
+    slider.max = maxDay;
+    slider.value = STATE.replay.day;
+  }
+  if (label) label.textContent = `Day ${STATE.replay.day} / ${maxDay}`;
+
+  const m = computeMetrics(rows);
+  renderMetrics(m, 'sim', {
+    volSub: 'Annualized',
+    sharpeSub: 'Replay realtime',
+    betaSub: 'vs VN-Index',
+    drawdownSub: 'Replay history',
+  });
+  renderRiskBadge(m, 'simRiskBadge');
+  renderCandlestick(rows, 'simChartCandle', `${STATE.selected} Replay`);
+  renderVolume(rows, 'simChartVolume');
+  renderPriceLine(rows, 'simChartLine');
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -905,6 +1037,98 @@ function buildGlossary() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   13B. PRODUCT FEATURE HOVER GUIDE
+   ═══════════════════════════════════════════════════════════════════════ */
+async function loadProductGuides() {
+  try {
+    const res = await fetch('guide.json');
+    if (!res.ok) throw new Error('guide.json not found');
+    const guides = await res.json();
+    STATE.guides = Array.isArray(guides) ? guides.filter(g => g.selector && g.title) : [];
+  } catch (err) {
+    console.warn('Không thể tải guide.json:', err);
+    STATE.guides = [];
+  }
+}
+
+function initProductGuidePanel() {
+  if (!STATE.guides.length || document.getElementById('productGuidePanel')) return;
+
+  const panel = document.createElement('aside');
+  panel.id = 'productGuidePanel';
+  panel.className = 'product-guide-panel';
+  panel.setAttribute('aria-live', 'polite');
+  panel.innerHTML = `
+    <div class="product-guide-kicker">Tính năng sản phẩm</div>
+    <div class="product-guide-category"></div>
+    <div class="product-guide-title"></div>
+    <div class="product-guide-summary"></div>
+    <div class="product-guide-example"></div>
+  `;
+  document.body.appendChild(panel);
+
+  let activeTarget = null;
+  let activeGuide = null;
+  let hideTimer = null;
+
+  const categoryEl = panel.querySelector('.product-guide-category');
+  const titleEl = panel.querySelector('.product-guide-title');
+  const summaryEl = panel.querySelector('.product-guide-summary');
+  const exampleEl = panel.querySelector('.product-guide-example');
+
+  function findGuideTarget(node) {
+    if (!node || node === document || node === window) return null;
+    for (const guide of STATE.guides) {
+      const target = node.closest?.(guide.selector);
+      if (target) return { guide, target };
+    }
+    return null;
+  }
+
+  function showGuide(guide, target) {
+    clearTimeout(hideTimer);
+    activeGuide = guide;
+    activeTarget = target;
+    categoryEl.textContent = guide.category || 'Tính năng';
+    titleEl.textContent = guide.title;
+    summaryEl.textContent = guide.summary || guide.how || '';
+    exampleEl.textContent = guide.example || '';
+    panel.classList.add('visible');
+  }
+
+  function hideGuide() {
+    hideTimer = setTimeout(() => {
+      panel.classList.remove('visible');
+      activeTarget = null;
+      activeGuide = null;
+    }, 90);
+  }
+
+  document.addEventListener('mouseover', e => {
+    const match = findGuideTarget(e.target);
+    if (!match) return;
+    if (match.target === activeTarget && match.guide === activeGuide) return;
+    showGuide(match.guide, match.target);
+  });
+
+  document.addEventListener('mouseout', e => {
+    if (!activeTarget) return;
+    const to = e.relatedTarget;
+    if (to && activeTarget.contains(to)) return;
+    hideGuide();
+  });
+
+  document.addEventListener('focusin', e => {
+    const match = findGuideTarget(e.target);
+    if (match) showGuide(match.guide, match.target);
+  });
+
+  document.addEventListener('focusout', e => {
+    if (activeTarget && activeTarget.contains(e.target)) hideGuide();
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    14. INIT
    ═══════════════════════════════════════════════════════════════════════ */
 async function init() {
@@ -913,6 +1137,7 @@ async function init() {
   const json      = await res.json();
   STATE.stocks    = json.stocks;
   STATE.glossary  = json.glossary;
+  await loadProductGuides();
 
   /* Pre-generate data */
   for (const ticker of Object.keys(STATE.stocks)) {
@@ -921,10 +1146,12 @@ async function init() {
 
   initTabs();
   buildSidebar();
+  initReplayControls();
   initAIAnalysis();
   buildGlossary();
   initSearch();
   initWatchlist();
+  initProductGuidePanel();
   renderWatchlist();
   render();
   updateClock();

@@ -15,8 +15,8 @@
   --blue:       #7ec8e3;
   --text:       #e0e0e0;
   --muted:      #7a8899;
-  --font-mono:  'Space Mono', monospace;
-  --font-body:  'DM Sans', sans-serif;
+  --font-mono:  'Arial', Arial;
+  --font-body:  'Arial', Arial;
   --radius:     10px;
   --transition: 0.2s ease;
   --topnav-h:   0px;
@@ -599,6 +599,43 @@ input[type=range] {
   border-radius: var(--radius);
   overflow: hidden;
 }
+.replay-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, 36px) minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+.replay-toolbar button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--green);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: border-color var(--transition), background var(--transition), opacity var(--transition);
+}
+.replay-toolbar button:hover:not(:disabled) {
+  border-color: var(--green);
+  background: #00ff9410;
+}
+.replay-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.replay-toolbar input[type=range] {
+  min-width: 0;
+}
+#replayDayLabel {
+  color: var(--blue);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
 .charts-bottom {
   display: grid;
   grid-template-columns: 1fr 2fr;
@@ -631,6 +668,75 @@ input[type=range] {
   background: var(--bg3); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 20px 24px;
   color: var(--muted); font-size: 0.85rem; text-align: center; margin-top: 16px;
+}
+
+/* Product feature fixed guide panel */
+.product-guide-panel {
+  position: fixed;
+  left: 18px;
+  bottom: calc(var(--footer-h) + 18px);
+  z-index: 100200;
+  width: 230px;
+  height: 230px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 9px;
+  background: rgba(8, 19, 34, 0.96);
+  border: 1px solid rgba(126, 200, 227, 0.55);
+  border-radius: 8px;
+  box-shadow: 0 18px 46px rgba(0,0,0,0.56), 0 0 24px rgba(0,255,148,0.12);
+  padding: 18px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px) scale(0.98);
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s linear 0.16s;
+}
+.product-guide-panel.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  transition-delay: 0s;
+}
+.product-guide-kicker {
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.76;
+}
+.product-guide-category {
+  align-self: flex-start;
+  background: rgba(126,200,227,0.16);
+  border: 1px solid rgba(126,200,227,0.42);
+  border-radius: 999px;
+  color: #b9ecff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 4px 9px;
+  line-height: 1;
+}
+.product-guide-title {
+  color: #00ff94;
+  font-size: 1.22rem;
+  font-weight: 800;
+  line-height: 1.18;
+}
+.product-guide-summary {
+  color: #f6fbff;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.32;
+}
+.product-guide-example {
+  color: #b6c6d8;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  padding-top: 10px;
 }
 
 /* AI Risk Analysis */
@@ -1915,6 +2021,17 @@ input[type=range] {
   /* Metric value nhỏ hơn */
   .metric-value { font-size: 1.1rem; }
 
+  .replay-toolbar {
+    grid-template-columns: repeat(4, 34px) 1fr;
+  }
+  .replay-toolbar input[type=range] {
+    grid-column: 1 / -1;
+    order: 2;
+  }
+  #replayDayLabel {
+    justify-self: end;
+  }
+
   /* AI insight grid: 1 cột */
   .ai-insight-grid { grid-template-columns: 1fr; }
 
@@ -1929,6 +2046,18 @@ input[type=range] {
 
   /* Chatbot: thu nhỏ chat window */
   #chatWindow { width: calc(100vw - 24px); right: 12px; }
+
+  .product-guide-panel {
+    left: 12px;
+    bottom: 12px;
+    width: 190px;
+    height: 190px;
+    padding: 14px;
+    gap: 7px;
+  }
+  .product-guide-title { font-size: 1.02rem; }
+  .product-guide-summary { font-size: 0.88rem; }
+  .product-guide-example { font-size: 0.72rem; padding-top: 7px; }
 }
 
 /* ── PHONE NHỎ (< 400px) ──────────────────────────────────────────── */
