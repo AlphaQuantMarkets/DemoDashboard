@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Về AlphaQuant | Risk Dashboard</title>
+  
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg:    '#060b14',
+            bg2:   '#0a1628',
+            bg3:   '#0d1f35',
+            green: '#00ff94',
+            red:   '#ff4b4b',
+            amber: '#f5a623',
+            blue:  '#7ec8e3',
+            muted: '#7a8899',
+          },
+          fontFamily: {
+            mono: ['"Space Mono"', 'monospace'],
+            body: ['"DM Sans"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  
+  <!-- Custom stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+  
+  <!-- App logic -->
+  <script src="script.js" defer></script>
+</head>
+<body class="bg-bg text-white font-body min-h-screen flex flex-col">
+
+  <!-- ─── NAVBAR (Sticky) ──────────────────────────────────────────────── -->
+  <header class="topnav sticky top-0 z-40 w-full backdrop-blur-md bg-[#060b14]/90 border-b border-[#00ff9428]">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <a href="../index.html" class="flex items-center gap-2 group">
+          <span class="font-mono text-xl font-bold text-green group-hover:text-white transition-colors duration-300">⚡ ALPHA</span>
+          <span class="font-mono text-xl font-bold text-white group-hover:text-green transition-colors duration-300">QUANT</span>
+        </a>
+      </div>
+      <nav class="hidden md:flex items-center gap-6">
+        <a href="../index.html" class="text-sm font-bold text-[#c8d0da] hover:text-green transition-colors">Trang chủ</a>
+        <a href="#" class="text-sm font-bold text-green border-b-2 border-green py-1">Về AlphaQuant</a>
+        <a href="../index.html" class="text-sm font-bold text-[#c8d0da] hover:text-green transition-colors">Dashboard</a>
+      </nav>
+      <div class="flex items-center gap-4">
+        <a href="../index.html" class="btn-solid">Quay lại Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── MAIN CONTENT ─────────────────────────────────────────────────── -->
+  <main class="flex-grow">
+    
+    <!-- Hero Section -->
+    <section class="relative pt-24 pb-16 px-6 overflow-hidden">
+      <!-- Decorator Blobs -->
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-green/10 blur-[120px] rounded-full pointer-events-none"></div>
+      
+      <div class="max-w-4xl mx-auto text-center relative z-10 fade-in-up">
+        <h1 class="text-5xl md:text-6xl font-bold font-mono mb-6">
+          <span class="text-white">VỀ</span> <span class="text-green">ALPHAQUANT</span>
+        </h1>
+        <p class="text-lg md:text-xl text-muted leading-relaxed max-w-2xl mx-auto">
+          Hệ thống phân tích và trực quan hóa rủi ro chứng khoán thế hệ mới, được thiết kế dành riêng cho nhà đầu tư trẻ Việt Nam.
+        </p>
+      </div>
+    </section>
+
+    <!-- Meaning & Purpose Section -->
+    <section class="py-16 px-6 relative z-10">
+      <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <!-- Ý nghĩa tên -->
+        <div class="info-card fade-in-up delay-100">
+          <div class="flex items-center gap-3 mb-6 border-b border-[#00ff9428] pb-4">
+            <span class="text-3xl">💡</span>
+            <h2 class="text-2xl font-bold font-mono text-white">Ý NGHĨA TÊN GỌI</h2>
+          </div>
+          <ul class="space-y-6">
+            <li>
+              <div class="text-green font-mono text-xl font-bold mb-1">ALPHA</div>
+              <p class="text-muted leading-relaxed">Thuật ngữ tài chính chỉ mức lợi nhuận vượt trội so với thị trường chung, đại diện cho mục tiêu giúp người dùng đưa ra quyết định đầu tư tốt hơn mặt bằng chung.</p>
+            </li>
+            <li>
+              <div class="text-green font-mono text-xl font-bold mb-1">QUANT</div>
+              <p class="text-muted leading-relaxed">Viết tắt của <em>Quantitative Analysis</em>, phương pháp phân tích định lượng dựa trên dữ liệu và mô hình toán học.</p>
+            </li>
+          </ul>
+          <div class="mt-6 p-4 bg-bg rounded-lg border border-[#00ff9428]">
+            <p class="text-sm text-blue italic">
+              "Kết hợp lại, AlphaQuant thể hiện cam kết ứng dụng khoa học dữ liệu để tạo ra lợi thế thực sự cho nhà đầu tư trẻ."
+            </p>
+          </div>
+        </div>
+
+        <!-- Mục đích dự án -->
+        <div class="info-card fade-in-up delay-200">
+          <div class="flex items-center gap-3 mb-6 border-b border-[#00ff9428] pb-4">
+            <span class="text-3xl">🎯</span>
+            <h2 class="text-2xl font-bold font-mono text-white">MỤC ĐÍCH DỰ ÁN</h2>
+          </div>
+          <p class="text-muted leading-relaxed mb-4">
+            AlphaQuant xây dựng hệ thống phân tích và trực quan hóa rủi ro chứng khoán dựa trên dữ liệu thị trường thực từ <strong>HOSE</strong> và <strong>HNX</strong>.
+          </p>
+          <p class="text-muted leading-relaxed mb-4">
+            Hệ thống trình bày kết quả bằng ngôn ngữ đơn giản, dễ tiếp cận — giúp người dùng hiểu được mức độ rủi ro của từng cổ phiếu mà không cần nền tảng tài chính chuyên sâu.
+          </p>
+          <div class="grid grid-cols-2 gap-4 mt-8">
+            <div class="p-4 bg-bg border border-[#00ff9428] rounded-lg text-center">
+              <div class="text-green font-bold text-2xl mb-1">Data</div>
+              <div class="text-xs text-muted uppercase">Dữ liệu thực</div>
+            </div>
+            <div class="p-4 bg-bg border border-[#00ff9428] rounded-lg text-center">
+              <div class="text-blue font-bold text-2xl mb-1">Visual</div>
+              <div class="text-xs text-muted uppercase">Trực quan hóa</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Context & Audience Section -->
+    <section class="py-16 px-6 bg-bg2 border-y border-[#00ff9428]">
+      <div class="max-w-5xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+          
+          <!-- Bối cảnh -->
+          <div class="fade-in-up">
+            <h3 class="text-sm font-bold text-blue tracking-widest uppercase mb-2">Bối cảnh & Lý do</h3>
+            <h2 class="text-3xl font-bold text-white mb-6">Vì sao AlphaQuant ra đời?</h2>
+            <div class="space-y-4 text-muted leading-relaxed">
+              <p>
+                Tính đến cuối năm 2025, Việt Nam ghi nhận hơn <strong>11 triệu tài khoản</strong> chứng khoán cá nhân — trong đó phần lớn là nhà đầu tư mới, chủ yếu thuộc thế hệ trẻ.
+              </p>
+              <p>
+                Tuy nhiên, phần lớn công cụ phân tích hiện có đều yêu cầu kiến thức tài chính nền hoặc thiết kế cho nhà đầu tư chuyên nghiệp.
+              </p>
+              <div class="pl-4 border-l-2 border-amber py-2 my-4 bg-[#f5a62310] rounded-r text-sm">
+                Hệ quả là nhiều người đưa ra quyết định đầu tư dựa trên cảm tính, tin đồn hoặc thông tin chưa được kiểm chứng — dẫn đến rủi ro tài chính không đáng có.
+              </div>
+              <p class="text-white font-medium">
+                AlphaQuant ra đời để lấp đầy khoảng trống đó.
+              </p>
+            </div>
+          </div>
+
+          <!-- Đối tượng -->
+          <div class="fade-in-up delay-200 flex flex-col justify-center">
+            <div class="p-8 bg-bg3 border border-[#00ff9428] rounded-xl relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+              <h3 class="text-sm font-bold text-green tracking-widest uppercase mb-2">Đối tượng hướng đến</h3>
+              <h2 class="text-2xl font-bold text-white mb-4">Nhà đầu tư trẻ Gen Z</h2>
+              <p class="text-muted leading-relaxed">
+                Học sinh, sinh viên và người trẻ Việt Nam đang bắt đầu tìm hiểu về đầu tư chứng khoán — những người có động lực học hỏi nhưng chưa có nền tảng tài chính và đang thiếu một công cụ phân tích phù hợp với trình độ của mình.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Team Members Section -->
+    <section class="py-20 px-6">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16 fade-in-up">
+          <h2 class="text-4xl font-bold font-mono text-white mb-4">ĐỘI NGŨ PHÁT TRIỂN</h2>
+          <p class="text-muted max-w-2xl mx-auto">Những gương mặt đứng sau hệ thống AlphaQuant.</p>
+        </div>
+
+        <div class="team-grid">
+          
+          <!-- Member 1 -->
+          <div class="team-card fade-in-up">
+            <div class="team-img-wrap">
+              <img src="assets/trannguyenbaotran.png" alt="Trần Nguyễn Bảo Trân" class="team-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMGExNjI4Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iNDAiIGZpbGw9IiMwMGZmOTQyOCIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VE48L3RleHQ+PC9zdmc+'" />
+            </div>
+            <div class="team-info">
+              <h3 class="team-name">Trần Nguyễn Bảo Trân</h3>
+              <div class="team-role">[Vị trí / Role của bạn (5-10 chữ)]</div>
+              <p class="team-intro">
+                [Đoạn tự giới thiệu ngắn gọn về bản thân, sở thích hoặc định hướng (50-70 chữ)... Hãy điền thông tin chi tiết vào đây để làm nổi bật cá tính của bạn.]
+              </p>
+            </div>
+          </div>
+
+          <!-- Member 2 -->
+          <div class="team-card fade-in-up delay-100">
+            <div class="team-img-wrap">
+              <img src="assets/dinhnguyenngocminh.png" alt="Đinh Nguyễn Ngọc Minh" class="team-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMGExNjI4Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iNDAiIGZpbGw9IiMwMGZmOTQyOCIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RE08L3RleHQ+PC9zdmc+'" />
+            </div>
+            <div class="team-info">
+              <h3 class="team-name">Đinh Nguyễn Ngọc Minh</h3>
+              <div class="team-role">[Vị trí / Role của bạn (5-10 chữ)]</div>
+              <p class="team-intro">
+                [Đoạn tự giới thiệu ngắn gọn về bản thân, sở thích hoặc định hướng (50-70 chữ)... Hãy điền thông tin chi tiết vào đây để làm nổi bật cá tính của bạn.]
+              </p>
+            </div>
+          </div>
+
+          <!-- Member 3 -->
+          <div class="team-card fade-in-up delay-200">
+            <div class="team-img-wrap">
+              <img src="assets/lehokhanhmy.png" alt="Lê Hồ Khánh My" class="team-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMGExNjI4Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iNDAiIGZpbGw9IiMwMGZmOTQyOCIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+TE08L3RleHQ+PC9zdmc+'" />
+            </div>
+            <div class="team-info">
+              <h3 class="team-name">Lê Hồ Khánh My</h3>
+              <div class="team-role">[Vị trí / Role của bạn (5-10 chữ)]</div>
+              <p class="team-intro">
+                [Đoạn tự giới thiệu ngắn gọn về bản thân, sở thích hoặc định hướng (50-70 chữ)... Hãy điền thông tin chi tiết vào đây để làm nổi bật cá tính của bạn.]
+              </p>
+            </div>
+          </div>
+
+          <!-- Member 4 -->
+          <div class="team-card fade-in-up">
+            <div class="team-img-wrap">
+              <img src="assets/dangdiemquynh.png" alt="Đặng Diễm Quỳnh" class="team-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMGExNjI4Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iNDAiIGZpbGw9IiMwMGZmOTQyOCIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RFE8L3RleHQ+PC9zdmc+'" />
+            </div>
+            <div class="team-info">
+              <h3 class="team-name">Đặng Diễm Quỳnh</h3>
+              <div class="team-role">[Vị trí / Role của bạn (5-10 chữ)]</div>
+              <p class="team-intro">
+                [Đoạn tự giới thiệu ngắn gọn về bản thân, sở thích hoặc định hướng (50-70 chữ)... Hãy điền thông tin chi tiết vào đây để làm nổi bật cá tính của bạn.]
+              </p>
+            </div>
+          </div>
+
+          <!-- Member 5 -->
+          <div class="team-card fade-in-up delay-100">
+            <div class="team-img-wrap">
+              <img src="assets/dinhduykhang.png" alt="Đinh Duy Khang" class="team-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMGExNjI4Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iNDAiIGZpbGw9IiMwMGZmOTQyOCIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+REs8L3RleHQ+PC9zdmc+'" />
+            </div>
+            <div class="team-info">
+              <h3 class="team-name">Đinh Duy Khang</h3>
+              <div class="team-role">[Vị trí / Role của bạn (5-10 chữ)]</div>
+              <p class="team-intro">
+                [Đoạn tự giới thiệu ngắn gọn về bản thân, sở thích hoặc định hướng (50-70 chữ)... Hãy điền thông tin chi tiết vào đây để làm nổi bật cá tính của bạn.]
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ─── FOOTER ───────────────────────────────────────────────────────── -->
+  <footer class="border-t border-[#00ff9428] bg-bg2 py-6 mt-auto">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="text-sm text-muted">
+        &copy; 2026 AlphaQuant. All rights reserved.
+      </div>
+      <div class="text-xs text-muted/60">
+        Dữ liệu mô phỏng cho mục đích giáo dục.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
