@@ -1,0 +1,240 @@
+[
+  {
+    "selector": ".tab-btn[data-tab='tab1']",
+    "category": "Nút ấn đặc trưng",
+    "title": "Phân tích đơn",
+    "summary": "Xem nhanh rủi ro một cổ phiếu.",
+    "example": "Chọn FPT để đọc toàn bộ chỉ số."
+  },
+  {
+    "selector": ".tab-btn[data-tab='tab2']",
+    "category": "Nút ấn đặc trưng",
+    "title": "So sánh",
+    "summary": "Đặt nhiều cổ phiếu cạnh nhau.",
+    "example": "So FPT với HPG và MWG."
+  },
+  {
+    "selector": ".tab-btn[data-tab='tab5']",
+    "category": "Nút ấn đặc trưng",
+    "title": "Phân Tích AI",
+    "summary": "Tóm tắt rủi ro bằng ngôn ngữ dễ hiểu.",
+    "example": "Bấm tạo phân tích cho VNM."
+  },
+  {
+    "selector": ".tab-btn[data-tab='tab3']",
+    "category": "Thuật ngữ",
+    "title": "Thuật ngữ",
+    "summary": "Giải thích khái niệm tài chính quan trọng.",
+    "example": "Đọc Beta trước khi so sánh mã."
+  },
+  {
+    "selector": ".tab-btn[data-tab='tab4']",
+    "category": "Nút ấn đặc trưng",
+    "title": "Cộng đồng",
+    "summary": "Không gian thảo luận và bài viết.",
+    "example": "Xem chủ đề về Sharpe Ratio."
+  },
+  {
+    "selector": ".tab-btn[data-tab='tab6']",
+    "category": "Nút ấn đặc trưng",
+    "title": "Market Replay",
+    "summary": "Xem thị trường như đang tua lại.",
+    "example": "Kéo về Day 82 để học."
+  },
+  {
+    "selector": "#stockSelect, #stockSelectMobile, #aiStockSelect",
+    "category": "Nút ấn đặc trưng",
+    "title": "Chọn cổ phiếu",
+    "summary": "Đổi mã để cập nhật dashboard.",
+    "example": "Chọn HPG để xem Hòa Phát."
+  },
+  {
+    "selector": "#periodSlider",
+    "category": "Nút ấn đặc trưng",
+    "title": "Khoảng thời gian",
+    "summary": "Chọn số ngày để phân tích.",
+    "example": "180 ngày cho góc nhìn trung hạn."
+  },
+  {
+    "selector": "#headerSearch",
+    "category": "Nút ấn đặc trưng",
+    "title": "Tìm mã cổ phiếu",
+    "summary": "Tìm nhanh mã hoặc tên công ty.",
+    "example": "Gõ MWG để chọn Mobile World."
+  },
+  {
+    "selector": "#tab1 .metric-card:nth-child(1), #tab6 .metric-card:nth-child(1), #mPriceVal, #simPriceVal",
+    "category": "Thông số hiển thị",
+    "title": "Giá hiện tại",
+    "summary": "Giá đóng cửa mới nhất đang xem.",
+    "example": "Replay chỉ dùng giá ngày hiện tại."
+  },
+  {
+    "selector": "#tab1 .metric-card:nth-child(2), #tab6 .metric-card:nth-child(2), #mVolVal, #simVolVal",
+    "category": "Thông số hiển thị",
+    "title": "Volatility",
+    "summary": "Độ rung lắc của giá cổ phiếu.",
+    "example": "Vol cao nghĩa là dao động mạnh."
+  },
+  {
+    "selector": "#tab1 .metric-card:nth-child(3), #tab6 .metric-card:nth-child(3), #mSharpeVal, #simSharpeVal",
+    "category": "Thuật ngữ",
+    "title": "Sharpe Ratio",
+    "summary": "Lợi nhuận có xứng với rủi ro.",
+    "example": "Sharpe trên 1 thường tốt hơn."
+  },
+  {
+    "selector": "#tab1 .metric-card:nth-child(4), #tab6 .metric-card:nth-child(4), #mBetaVal, #simBetaVal",
+    "category": "Thuật ngữ",
+    "title": "Beta",
+    "summary": "Độ nhạy so với thị trường chung.",
+    "example": "Beta 1.4 thường nhạy hơn."
+  },
+  {
+    "selector": "#tab1 .metric-card:nth-child(5), #tab6 .metric-card:nth-child(5), #mDrawdownVal, #simDrawdownVal",
+    "category": "Thuật ngữ",
+    "title": "Max Drawdown",
+    "summary": "Mức giảm sâu nhất từng xảy ra.",
+    "example": "-18% nghĩa là từng giảm sâu."
+  },
+  {
+    "selector": ".risk-row, #riskBadge, #simRiskBadge",
+    "category": "Thông số hiển thị",
+    "title": "Risk Level",
+    "summary": "Nhãn rủi ro dễ đọc cho người mới.",
+    "example": "LOW là ít biến động hơn."
+  },
+  {
+    "selector": "#chartCandle, #simChartCandle",
+    "category": "Thông số hiển thị",
+    "title": "Biểu đồ nến",
+    "summary": "Xem mở, đóng, cao, thấp.",
+    "example": "Nến xanh là phiên tăng giá."
+  },
+  {
+    "selector": "#chartVolume, #simChartVolume",
+    "category": "Thông số hiển thị",
+    "title": "Volume",
+    "summary": "Sức mua bán trong từng ngày.",
+    "example": "Volume cao là giao dịch sôi động."
+  },
+  {
+    "selector": "#chartLine, #simChartLine",
+    "category": "Thông số hiển thị",
+    "title": "Rolling Volatility",
+    "summary": "Rủi ro thay đổi theo thời gian.",
+    "example": "Đường cam tăng là rủi ro tăng."
+  },
+  {
+    "selector": "#compareList, .compare-item",
+    "category": "Nút ấn đặc trưng",
+    "title": "Chọn mã so sánh",
+    "summary": "Tick mã để so hiệu suất.",
+    "example": "Chọn VNM để so với FPT."
+  },
+  {
+    "selector": "#chartNorm",
+    "category": "Thông số hiển thị",
+    "title": "Giá chuẩn hóa",
+    "summary": "So hiệu suất từ cùng mốc 100.",
+    "example": "120 nghĩa là tăng khoảng 20%."
+  },
+  {
+    "selector": "#chartVolBar",
+    "category": "Thông số hiển thị",
+    "title": "Volatility by Stock",
+    "summary": "So độ biến động giữa các mã.",
+    "example": "Cột cao hơn là rủi ro hơn."
+  },
+  {
+    "selector": ".ai-segmented",
+    "category": "Nút ấn đặc trưng",
+    "title": "Khẩu vị rủi ro",
+    "summary": "Chọn phong cách chịu rủi ro.",
+    "example": "Thận trọng ưu tiên biến động thấp."
+  },
+  {
+    "selector": "#aiRunBtn",
+    "category": "Nút ấn đặc trưng",
+    "title": "Tạo phân tích",
+    "summary": "Sinh nhận xét rủi ro demo.",
+    "example": "Bấm sau khi chọn mã cổ phiếu."
+  },
+  {
+    "selector": ".glossary-card",
+    "category": "Thuật ngữ",
+    "title": "Thẻ thuật ngữ",
+    "summary": "Học nhanh khái niệm tài chính.",
+    "example": "Đọc Beta hoặc Rolling Volatility."
+  },
+  {
+    "selector": ".watchlist-item",
+    "category": "Nút ấn đặc trưng",
+    "title": "Watchlist",
+    "summary": "Theo dõi nhanh mã bạn quan tâm.",
+    "example": "Bấm HPG để chuyển dashboard."
+  },
+  {
+    "selector": "#addWatchlistBtn",
+    "category": "Nút ấn đặc trưng",
+    "title": "Thêm Watchlist",
+    "summary": "Lưu mã đang xem để theo dõi.",
+    "example": "Chọn FPT rồi bấm thêm."
+  },
+  {
+    "selector": ".community-primary-btn",
+    "category": "Nút ấn đặc trưng",
+    "title": "Tạo bài viết",
+    "summary": "Mở luồng chia sẻ quan điểm.",
+    "example": "Viết nhận định về VNM."
+  },
+  {
+    "selector": ".community-join-btn",
+    "category": "Nút ấn đặc trưng",
+    "title": "Tham gia nhóm",
+    "summary": "Theo dõi cộng đồng cùng chủ đề.",
+    "example": "Tham gia Risk Management Lab."
+  },
+  {
+    "selector": "#replayPlayBtn",
+    "category": "Nút ấn đặc trưng",
+    "title": "Play Replay",
+    "summary": "Tự chạy từng ngày lịch sử.",
+    "example": "Day 80 chạy đến Day 81."
+  },
+  {
+    "selector": "#replayPauseBtn",
+    "category": "Nút ấn đặc trưng",
+    "title": "Pause Replay",
+    "summary": "Dừng replay tại ngày hiện tại.",
+    "example": "Dừng ở Day 120 để đọc."
+  },
+  {
+    "selector": "#replayBackBtn",
+    "category": "Nút ấn đặc trưng",
+    "title": "Step Back",
+    "summary": "Lùi lại đúng một ngày.",
+    "example": "Day 82 về Day 81."
+  },
+  {
+    "selector": "#replayForwardBtn",
+    "category": "Nút ấn đặc trưng",
+    "title": "Step Forward",
+    "summary": "Tiến lên đúng một ngày.",
+    "example": "Day 82 lên Day 83."
+  },
+  {
+    "selector": "#replaySlider",
+    "category": "Nút ấn đặc trưng",
+    "title": "Replay Slider",
+    "summary": "Kéo để chọn ngày quá khứ.",
+    "example": "Kéo về Day 65 để học."
+  },
+  {
+    "selector": "#chatFab, #chatWindow",
+    "category": "Nút ấn đặc trưng",
+    "title": "AlphaQuant AI",
+    "summary": "Hỏi nhanh khi chưa hiểu chỉ số.",
+    "example": "Hỏi Volatility cao là gì."
+  }
+]

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaQuant | Interactive Learning Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#060b14',
+            bg2: '#0a1628',
+            bg3: '#0d1f35',
+            green: '#00ff94',
+            red: '#ff4b4b',
+            amber: '#f5a623',
+            blue: '#7ec8e3',
+            muted: '#7a8899',
+          },
+          fontFamily: {
+            mono: ['"Space Mono"', 'monospace'],
+            body: ['"DM Sans"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="style.css" />
+  <script src="app.js" defer></script>
+  <script>window.__loadStart = Date.now();</script>
+</head>
+<body class="bg-bg text-white font-body">
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-wordmark">⚡ ALPHAQUANT</div>
+  <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+</div>
+
+<div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+  <div class="modal-backdrop" onclick="closeModal()"></div>
+  <div class="auth-modal-box">
+    <div class="flex items-center justify-between mb-1">
+      <span class="font-mono text-green font-bold tracking-widest text-base" id="authModalTitle">LOGIN</span>
+      <button onclick="closeModal()" class="text-muted hover:text-white transition-colors text-2xl leading-none">&times;</button>
+    </div>
+    <p class="text-muted text-sm mb-5" id="authModalDesc">Đăng nhập vào tài khoản AlphaQuant của bạn.</p>
+    <div class="flex flex-col gap-3">
+      <input type="email" placeholder="Email" class="auth-input" />
+      <input type="password" placeholder="Mật khẩu / Password" class="auth-input" />
+    </div>
+    <button class="btn-solid w-full mt-5 justify-center" onclick="closeModal()">Tiếp tục / Continue →</button>
+    <p class="text-center text-muted/60 text-xs mt-4">Đây là trang demo — chưa có xử lý backend.</p>
+  </div>
+</div>
+
+<div class="topnav-banner-row" id="topnavBanner">
+  <img src="assets/banner.png" alt="AlphaQuant Banner" class="topnav-banner-img" />
+</div>
+
+<header class="topnav" id="topnav">
+  <div class="topnav-nav-row">
+    <nav class="topnav-nav">
+      <a href="#" class="topnav-nav-item topnav-nav-home" title="Home" data-route="home">
+        <img src="assets/home-button.jpg" alt="Home" class="topnav-home-icon" />
+      </a>
+      <a href="#" class="topnav-nav-item nav-link" data-route="home">Home</a>
+      <a href="#" class="topnav-nav-item nav-link" data-route="learn">Learning</a>
+      <a href="#" class="topnav-nav-item nav-link" data-route="practice">Practice</a>
+      <a href="#" class="topnav-nav-item nav-link" data-route="sandbox">Sandbox</a>
+      <a href="#" class="topnav-nav-item nav-link" data-route="achievements">Achievements</a>
+    </nav>
+    
+    <div class="topnav-mid">
+      <a href="../index.html"><strong>Về Trang Chủ</strong></a>
+    </div>
+
+    <div class="topnav-right">
+      <div class="topnav-search">
+        <svg class="topnav-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="9" cy="9" r="6"/><path stroke-linecap="round" d="M15 15l3 3"/>
+        </svg>
+        <input id="headerSearch" type="text" placeholder="Tìm bài học, mã cổ phiếu..." class="topnav-search-input" autocomplete="off" />
+        <div id="searchDropdown" class="search-dropdown hidden"></div>
+      </div>
+      <span class="hidden xl:block font-mono text-xs text-muted tabular-nums" id="clockEl"></span>
+      <button class="btn-outline" onclick="openModal('login')">Login</button>
+      <button class="btn-solid" onclick="openModal('signup')">Sign Up</button>
+    </div>
+  </div>
+</header>
+
+<div class="app-body learning-shell">
+  <aside class="sidebar learning-sidebar">
+    <div class="sidebar-group">
+      <p class="sidebar-group-label">Learning Path</p>
+      <button class="lesson-nav active" data-route="home">Today's Mission</button>
+      <button class="lesson-nav" data-route="learn">Continue Learning</button>
+      <button class="lesson-nav" data-route="practice">Practice Mode</button>
+      <button class="lesson-nav" data-route="sandbox">Portfolio Sandbox</button>
+      <button class="lesson-nav" data-route="achievements">Achievements</button>
+    </div>
+
+    <hr class="sidebar-divider" />
+
+    <div class="sidebar-group">
+      <p class="sidebar-group-label">Learner Status</p>
+      <div class="status-card">
+        <span>Level</span>
+        <strong id="sidebarLevel">1</strong>
+      </div>
+      <div class="status-card">
+        <span>XP</span>
+        <strong id="sidebarXP">0</strong>
+      </div>
+      <div class="mini-progress">
+        <div class="progress-track"><div class="progress-fill" id="sidebarProgress"></div></div>
+        <span id="sidebarProgressText">0% roadmap</span>
+      </div>
+    </div>
+
+    <p class="sidebar-disclaimer">
+      ⚠️ Dữ liệu mô phỏng cho mục đích học tập.<br/>Không phải tư vấn đầu tư.
+    </p>
+  </aside>
+
+  <main class="main learning-main">
+    <section class="view-panel active" id="viewHome">
+      <div class="mission-grid">
+        <article class="mission-hero">
+          <span class="ai-kicker">TODAY'S MISSION</span>
+          <h1>Learn Volume</h1>
+          <p>Hiểu khối lượng giao dịch trong 5 phút bằng ví dụ đời thường, rồi luyện tập ngay với dữ liệu mô phỏng.</p>
+          <div class="mission-meta">
+            <span>5 minutes</span>
+            <span>Reward +50 XP</span>
+            <span id="missionStatus">Ready</span>
+          </div>
+          <button class="btn-solid mission-cta" id="startLessonBtn">Start Learning</button>
+        </article>
+
+        <aside class="coach-card" id="homeCoach">
+          <div class="coach-head">
+            <span class="ai-kicker">AI COACH</span>
+            <span class="ai-status-pill">Proactive</span>
+          </div>
+          <h3 id="coachTitle">Bạn đang học Volume</h3>
+          <p id="coachMessage">Hôm nay bạn chỉ cần chú ý Price và Volume. Bạn chưa cần quan tâm RSI.</p>
+          <div class="coach-actions">
+            <button class="btn-outline coach-action" data-coach-action="explain">Explain</button>
+            <button class="btn-outline coach-action" data-coach-action="example">Show Example</button>
+            <button class="btn-solid coach-action" data-coach-action="practice">Practice</button>
+          </div>
+        </aside>
+      </div>
+
+      <div class="learning-grid">
+        <section class="learning-card span-2">
+          <div class="section-title">Continue Learning</div>
+          <div class="roadmap-progress">
+            <div class="progress-track"><div class="progress-fill" id="roadmapProgress"></div></div>
+            <span id="roadmapProgressText">0 of 7 completed</span>
+          </div>
+          <div class="lesson-chips" id="lessonChips"></div>
+        </section>
+
+        <section class="learning-card">
+          <div class="section-title">Achievements</div>
+          <div class="achievement-mini">
+            <strong id="homeLevel">Level 1</strong>
+            <span id="homeXP">0 XP</span>
+            <span id="homeStreak">Daily streak 1</span>
+          </div>
+        </section>
+      </div>
+
+      <section class="learning-card">
+        <div class="section-title">Mini Dashboard</div>
+        <div class="market-strip">
+          <div class="metric-card compact">
+            <div class="metric-label">VNINDEX</div>
+            <div class="metric-value">1,286.4</div>
+            <div class="metric-sub" style="color:var(--green)">+0.62%</div>
+          </div>
+          <div class="metric-card compact">
+            <div class="metric-label">Today's Highlight</div>
+            <div class="metric-value">Volume</div>
+            <div class="metric-sub">Dòng tiền đang sôi động</div>
+          </div>
+          <div class="metric-card compact">
+            <div class="metric-label">Top Gainer</div>
+            <div class="metric-value">FPT</div>
+            <div class="metric-sub" style="color:var(--green)">+2.8%</div>
+          </div>
+          <div class="metric-card compact">
+            <div class="metric-label">Top Loser</div>
+            <div class="metric-value">MWG</div>
+            <div class="metric-sub" style="color:var(--red)">-1.4%</div>
+          </div>
+          <div class="metric-card compact">
+            <div class="metric-label">Volume Alert</div>
+            <div class="metric-value">HPG</div>
+            <div class="metric-sub">1.9x average</div>
+          </div>
+        </div>
+        <div class="stock-card-grid" id="stockCards"></div>
+      </section>
+    </section>
+
+    <section class="view-panel" id="viewLearn">
+      <div class="learning-grid">
+        <article class="learning-card span-2 lesson-stage">
+          <div class="section-title" id="lessonSectionTitle">Lesson</div>
+          <h2 id="lessonTitle">Volume là gì?</h2>
+          <p id="lessonBody"></p>
+          <div class="lesson-example" id="lessonExample"></div>
+          <div class="lesson-actions">
+            <button class="btn-outline" id="prevLessonBtn">Previous</button>
+            <button class="btn-solid" id="nextLessonBtn">Next</button>
+          </div>
+        </article>
+
+        <aside class="learning-card">
+          <div class="section-title">Learning Roadmap</div>
+          <div class="roadmap-list" id="roadmapList"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view-panel" id="viewPractice">
+      <div class="learning-grid">
+        <article class="learning-card span-2">
+          <div class="section-title">Practice Mode</div>
+          <h2>Tìm cổ phiếu có Volume tăng</h2>
+          <p class="muted-copy">Chọn mã có khối lượng hôm nay cao hơn trung bình rõ rệt.</p>
+          <div class="practice-grid" id="practiceChoices"></div>
+          <div class="feedback-box" id="practiceFeedback">AI sẽ giải thích sau khi bạn chọn.</div>
+        </article>
+        <aside class="coach-card">
+          <div class="coach-head">
+            <span class="ai-kicker">AI COACH</span>
+            <span class="ai-status-pill">Practice</span>
+          </div>
+          <h3>Gợi ý nhỏ</h3>
+          <p>Volume tăng thường cho thấy nhiều người đang quan tâm hơn bình thường. Nhưng hãy xem cùng chiều giá để tránh hiểu nhầm.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view-panel" id="viewSandbox">
+      <div class="learning-grid">
+        <article class="learning-card span-2">
+          <div class="section-title">Portfolio Sandbox</div>
+          <div class="sandbox-head">
+            <div>
+              <span class="metric-label">Virtual Cash</span>
+              <strong id="cashValue">100,000,000 VND</strong>
+            </div>
+            <button class="btn-outline" id="resetSandboxBtn">Reset</button>
+          </div>
+          <div class="sandbox-grid" id="sandboxStocks"></div>
+        </article>
+        <aside class="learning-card">
+          <div class="section-title">Danh mục</div>
+          <div class="portfolio-list" id="portfolioList"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view-panel" id="viewAchievements">
+      <div class="learning-grid">
+        <article class="learning-card">
+          <div class="section-title">Level</div>
+          <div class="achievement-stat" id="achievementLevel">Level 1</div>
+        </article>
+        <article class="learning-card">
+          <div class="section-title">XP</div>
+          <div class="achievement-stat" id="achievementXP">0 XP</div>
+        </article>
+        <article class="learning-card">
+          <div class="section-title">Daily Streak</div>
+          <div class="achievement-stat" id="achievementStreak">1 day</div>
+        </article>
+      </div>
+      <section class="learning-card">
+        <div class="section-title">Badges</div>
+        <div class="badge-grid" id="badgeGrid"></div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<nav class="bottom-nav" aria-label="Mobile navigation">
+  <button class="bottom-nav-btn active" data-route="home">Home</button>
+  <button class="bottom-nav-btn" data-route="learn">Learn</button>
+  <button class="bottom-nav-btn" data-route="practice">Practice</button>
+  <button class="bottom-nav-btn" data-route="sandbox">Sandbox</button>
+  <button class="bottom-nav-btn" data-route="achievements">Badges</button>
+</nav>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span class="font-mono text-xs tracking-widest" style="color:#00ff9480">⚡ ALPHAQUANT</span>
+    <span class="text-xs text-muted">© 2026 AlphaQuant | TheNextX 2026 · Techcombank</span>
+    <span class="text-xs italic" style="color:#7a889980">
+      Dữ liệu chỉ mang tính chất học tập cho mục đích demo, không phải lời khuyên đầu tư.
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
