@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function login(username, password) {
 
     const response = await fetch(
-        "https://alphaquant-api.onrender.com",
+        "https://alphaquant-api-cg7b.onrender.com/api/auth/signup",
         {
             method: "POST",
             headers: {
