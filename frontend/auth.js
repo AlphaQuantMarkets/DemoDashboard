@@ -31,7 +31,7 @@ function closeModal() {
 async function signUp(username, password) {
 
     const response = await fetch(
-        "https://alphaquant-api.onrender.com",
+        "https://alphaquant-api-cg7b.onrender.com/",
         {
             method: "POST",
             headers: {
@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function login(username, password) {
 
     const response = await fetch(
-        "https://alphaquant-api-cg7b.onrender.com/api/auth/signup",
+        "https://alphaquant-api-cg7b.onrender.com/",
         {
             method: "POST",
             headers: {
