@@ -135,6 +135,97 @@ AI sẽ:
 
 ---
 
+# User Guide
+
+Các bước dưới đây mô tả quy trình trải nghiệm AlphaQuant trên phiên bản demo hiện tại.
+
+## 1. Phân tích một cổ phiếu
+
+- Chọn mã cổ phiếu tại **Sidebar → Stock**.
+- Điều chỉnh khoảng thời gian bằng **Period Slider**.
+- Quan sát các chỉ số rủi ro gồm:
+  - Current Price
+  - Risk Level
+  - Volatility
+  - Beta
+  - Sharpe Ratio
+  - Maximum Drawdown
+- Theo dõi trực quan dữ liệu thông qua:
+  - Candlestick Chart
+  - Volume Chart
+  - Historical Price
+  - Rolling Volatility
+
+---
+
+## 2. So sánh nhiều cổ phiếu
+
+- Chuyển sang tab **Stock Comparison**.
+- Chọn thêm một hoặc nhiều cổ phiếu để so sánh với mã đang phân tích.
+- Xem:
+  - Normalized Price Comparison
+  - Volatility Comparison
+  - Risk Metrics Table
+
+---
+
+## 3. Khám phá kiến thức
+
+- Mở tab **Learning** để tra cứu các thuật ngữ tài chính.
+- Đọc phần giải thích các chỉ số và khái niệm đầu tư dành cho người mới.
+
+---
+
+## 4. Trải nghiệm môi trường học tập
+
+- Chọn **Learning** trên thanh điều hướng.
+- Bắt đầu bài học thông qua **Today's Mission**.
+- Học theo lộ trình (**Learning Roadmap**).
+- Hoàn thành bài học để tích lũy **XP**, tăng **Level** và mở khóa **Achievements**.
+
+---
+
+## 5. Luyện tập với dữ liệu mô phỏng
+
+- Truy cập **Practice Mode**.
+- Thực hiện các bài tập dựa trên dữ liệu thị trường mô phỏng.
+- Xem phần giải thích sau khi hoàn thành mỗi câu hỏi.
+
+---
+
+## 6. Thực hành xây dựng danh mục
+
+- Mở **Portfolio Sandbox**.
+- Sử dụng số dư tiền ảo để xây dựng danh mục thử nghiệm.
+- Theo dõi danh mục trong khu vực **Portfolio**.
+
+---
+
+## 7. Quan sát diễn biến thị trường
+
+- Truy cập **Market Replay**.
+- Điều khiển quá trình phát lại bằng:
+  - Play
+  - Pause
+  - Forward
+  - Backward
+  - Timeline Slider
+- Quan sát sự thay đổi của giá, khối lượng và các chỉ số rủi ro theo từng thời điểm.
+
+---
+
+## 8. Theo dõi tiến trình học tập
+
+- Mở **Achievements** để xem:
+  - Level
+  - XP
+  - Daily Streak
+  - Badges
+
+> **Note**
+>
+> Toàn bộ dữ liệu trong phiên bản hiện tại được mô phỏng nhằm phục vụ mục đích học tập và trình diễn sản phẩm. AlphaQuant không cung cấp chức năng giao dịch hoặc khuyến nghị đầu tư.
+
 # AI Workflow
 
 ```

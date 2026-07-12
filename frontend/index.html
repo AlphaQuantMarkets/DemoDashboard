@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaQuant | Risk Dashboard</title>
+  <!-- Tailwind CSS (used for topnav, footer, modal, utility classes) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg:    '#060b14',
+            bg2:   '#0a1628',
+            bg3:   '#0d1f35',
+            green: '#00ff94',
+            red:   '#ff4b4b',
+            amber: '#f5a623',
+            blue:  '#7ec8e3',
+            muted: '#7a8899',
+          },
+          fontFamily: {
+            mono: ['"Space Mono"', 'monospace'],
+            body: ['"DM Sans"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <!-- Custom stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- Plotly -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly.min.js" defer></script>
+  <!-- App logic -->
+  <script src="app.js" defer></script>
+  <script>window.__loadStart = Date.now();</script>
+</head>
+<body class="bg-bg text-white font-body">
+
+
+<!-- ─── LOADING OVERLAY ─────────────────────────────────────────────── -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-wordmark">⚡ ALPHAQUANT</div>
+  <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+</div>
+
+<!-- ─── AUTH MODAL ──────────────────────────────────────────────────── -->
+<div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+  <div class="modal-backdrop" onclick="closeModal()"></div>
+  <div class="auth-modal-box">
+    <div class="flex items-center justify-between mb-1">
+      <span class="font-mono text-green font-bold tracking-widest text-base" id="authModalTitle">LOGIN</span>
+      <button onclick="closeModal()" class="text-muted hover:text-white transition-colors text-2xl leading-none">&times;</button>
+    </div>
+    <p class="text-muted text-sm mb-5" id="authModalDesc">Đăng nhập vào tài khoản AlphaQuant của bạn.</p>
+
+    <div class="flex flex-col gap-3">
+
+      <input
+          id="authUsername"
+          type="text"
+          placeholder="Username"
+          class="auth-input"
+      >
+
+      <input
+          id="authEmail"
+          type="email"
+          placeholder="Email"
+          class="auth-input"
+          style="display: none;"
+      >
+
+      <input
+          id="authPassword"
+          type="password"
+          placeholder="Mật khẩu / Password"
+          class="auth-input"
+      >
+
+    </div>
+
+    <button
+        id="authSubmit"
+        class="btn-solid w-full mt-5 justify-center">
+        Continue →
+    </button>
+    <p class="text-center text-muted/60 text-xs mt-4">Đây là trang demo — chưa có xử lý backend.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     STICKY TOP NAVIGATION
+══════════════════════════════════════════════════════════════════════ -->
+<!-- BANNER (scroll bình thường, không sticky) -->
+<div class="topnav-banner-row" id="topnavBanner">
+  <img src="assets/banner.png" alt="AlphaQuant Banner" class="topnav-banner-img" />
+</div>
+
+<!-- NAVBAR (sticky) -->
+<header class="topnav" id="topnav">
+  <div class="topnav-nav-row">
+    <nav class="topnav-nav">
+      <!-- HOME -->
+      <a href="#" class="topnav-nav-item topnav-nav-home" title="Home">
+        <img src="assets/home-button.jpg" alt="Home" class="topnav-home-icon" />
+      </a>
+      <!-- GIỚI THIỆU -->
+      <div class="topnav-dropdown-wrap">
+        <a href="#" class="topnav-nav-item">Giới thiệu</a>
+        <div class="topnav-dropdown">
+          <div class="dropdown-col">
+            <p class="dropdown-heading">GIỚI THIỆU</p>
+            <a href="aboutalphaquant\aboutalphaquant.html">Về AlphaQuant</a>
+            <a href="#">Mục tiêu dự án</a>
+            <a href="#">Tầm nhìn sản phẩm</a>
+            <a href="#">Beginner Investors</a>
+            <a href="#">Dashboard Overview</a>
+            <a href="#">Liên hệ / Hỗ trợ</a>
+          </div>
+        </div>
+      </div>
+      <!-- THỊ TRƯỜNG -->
+      <div class="topnav-dropdown-wrap">
+        <a href="#" class="topnav-nav-item">Thị trường</a>
+        <div class="topnav-dropdown">
+          <div class="dropdown-col">
+            <p class="dropdown-heading">THỊ TRƯỜNG</p>
+            <a href="#">VN-Index</a>
+            <a href="#">Top tăng giá</a>
+            <a href="#">Top giảm giá</a>
+            <a href="#">Cổ phiếu nổi bật</a>
+            <a href="#">Ngành nổi bật</a>
+            <a href="#">Khối lượng giao dịch</a>
+            <a href="#">Bản đồ thị trường</a>
+          </div>
+        </div>
+      </div>
+      <!-- GIAO DỊCH -->
+      <div class="topnav-dropdown-wrap">
+        <a href="#" class="topnav-nav-item">Giao dịch</a>
+        <div class="topnav-dropdown">
+          <div class="dropdown-col">
+            <p class="dropdown-heading">GIAO DỊCH</p>
+            <a href="#">Tra cứu cổ phiếu</a>
+            <a href="#">Biểu đồ giá</a>
+            <a href="#">Phân tích rủi ro</a>
+            <a href="#">Risk Score</a>
+            <a href="#">So sánh cổ phiếu</a>
+            <a href="#">Watchlist</a>
+            <a href="#">Danh mục đầu tư</a>
+          </div>
+        </div>
+      </div>
+      <!-- TIN TỨC -->
+      <div class="topnav-dropdown-wrap">
+        <a href="#" class="topnav-nav-item">Tin tức</a>
+        <div class="topnav-dropdown">
+          <div class="dropdown-col">
+            <p class="dropdown-heading">TIN TỨC & SỰ KIỆN</p>
+            <a href="#">Tin tức thị trường</a>
+            <a href="#">Tin doanh nghiệp</a>
+            <a href="#">Sự kiện kinh tế</a>
+            <a href="#">Thông báo mới</a>
+            <a href="#">Xu hướng đầu tư</a>
+            <a href="#">Báo cáo thị trường</a>
+          </div>
+        </div>
+      </div>
+      <!-- KIẾN THỨC -->
+      <div class="topnav-dropdown-wrap">
+        <a href="#" class="topnav-nav-item">Kiến thức</a>
+        <div class="topnav-dropdown">
+          <div class="dropdown-col">
+            <p class="dropdown-heading">KIẾN THỨC</p>
+            <a href="#">Chứng khoán cơ bản</a>
+            <a href="#">Risk Indicators</a>
+            <a href="#">Đọc biểu đồ nến</a>
+            <a href="#">Quản lý rủi ro</a>
+            <a href="#">Đa dạng hóa danh mục</a>
+            <a href="#">Thuật ngữ tài chính</a>
+            <a href="#">Hướng dẫn cho người mới</a>
+          </div>
+        </div>
+      </div>
+      <!-- HỆ THỐNG -->
+      <div class="topnav-dropdown-wrap">
+        <a href="#" class="topnav-nav-item">Hệ thống</a>
+        <div class="topnav-dropdown">
+          <div class="dropdown-col">
+            <p class="dropdown-heading">HỆ THỐNG</p>
+            <a href="#" onclick="openModal('login');return false;">Đăng nhập</a>
+            <a href="#">Cài đặt</a>
+            <a href="#">Hướng dẫn sử dụng</a>
+            <a href="#">Feedback</a>
+            <a href="#">Điều khoản sử dụng</a>
+            <a href="#">Chính sách dữ liệu</a>
+          </div>
+        </div>
+      </div>
+      <!-- Học -->
+      <div class="topnav-dropdown-wrap">
+        <a href="#" class="topnav-nav-item">Học tập</a>
+        <div class="topnav-dropdown">
+          <div class="dropdown-col">
+            <p class="dropdown-heading">HỌC TẬP</p>
+            <a href="Learn/index.html">Mở môi trường</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Right: Search + Clock + Auth -->
+    <div class="topnav-right">
+      <div class="topnav-search">
+        <svg class="topnav-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="9" cy="9" r="6"/><path stroke-linecap="round" d="M15 15l3 3"/>
+        </svg>
+        <input id="headerSearch" type="text"
+          placeholder="Tìm mã cổ phiếu..."
+          class="topnav-search-input" autocomplete="off" />
+        <div id="searchDropdown" class="search-dropdown hidden"></div>
+      </div>
+      <span class="hidden xl:block font-mono text-xs text-muted tabular-nums" id="clockEl"></span>
+      <button
+          id="loginBtn"
+          class="btn-outline"
+          onclick="openModal('login')">
+          Login
+      </button>
+
+      <button
+          id="signupBtn"
+          class="btn-solid"
+          onclick="openModal('signup')">
+          Sign Up
+      </button>
+
+      <span
+          id="userInfo"
+          style="display:none;font-weight:600;color:#fff;">
+      </span>
+
+      <button
+          id="logoutBtn"
+          class="btn-outline"
+          style="display:none;"
+          onclick="logout()">
+          Logout
+      </button>
+    </div>
+  </div>
+</header>
+
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     PAGE BODY  (sidebar + main)
+══════════════════════════════════════════════════════════════════════ -->
+<div class="app-body">
+
+  <!-- ─── SIDEBAR ──────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+
+    <!-- GROUP: ANALYSIS -->
+    <div class="sidebar-group">
+      <p class="sidebar-group-label">Phân tích / Analysis</p>
+
+      <div class="sidebar-field">
+        <p class="sidebar-label">📌 Cổ phiếu / Stock</p>
+        <div class="select-wrapper">
+          <select id="stockSelect"></select>
+        </div>
+
+        
+      </div>
+
+      <div class="sidebar-field">
+        <p class="sidebar-label">📅 Khoảng thời gian / Period</p>
+        <input type="range" id="periodSlider" />
+        <div class="slider-row">
+          <span>30</span><span>60</span><span>90</span><span>180</span><span>365</span>
+        </div>
+        <div class="period-display" id="periodLabel">180 ngày</div>
+      </div>
+    </div>
+
+    <hr class="sidebar-divider" />
+
+    <!-- GROUP: WATCHLIST -->
+    <div class="sidebar-group">
+      <p class="sidebar-group-label">Danh mục theo dõi / Watchlist</p>
+      <div id="watchlistItems" class="flex flex-col gap-1.5"></div>
+      <button id="addWatchlistBtn" class="watchlist-add-btn">＋ Thêm mã hiện tại</button>
+    </div>
+
+    <p class="sidebar-disclaimer">
+      ⚠️ Dữ liệu mô phỏng cho mục đích demo.<br/>Không phải tư vấn đầu tư.
+    </p>
+  </aside>
+
+  <!-- ─── MAIN CONTENT ──────────────────────────────────────────────── -->
+  <main class="main">
+
+    <div class="mobile-stock-bar">
+      <span class="mobile-stock-label">📌 Cổ phiếu:</span>
+      <select id="stockSelectMobile"></select>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab1">Phân tích đơn</button>
+      <button class="tab-btn"        data-tab="tab2">So sánh</button>
+      <button class="tab-btn"        data-tab="tab5">Phân Tích AI</button>
+      <button class="tab-btn"        data-tab="tab3">Thuật ngữ</button>
+      <button class="tab-btn"        data-tab="tab4">Cộng đồng</button>
+      <button class="tab-btn"        data-tab="tab6">SCK giả lập (Market Replay)</button>
+    </div>
+
+    <!-- ══════ TAB 1 ══════════════════════════════════════════════════ -->
+    <div class="tab-panel active" id="tab1">
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-label">Giá hiện tại / Price</div>
+          <div class="metric-value" id="mPriceVal" style="color:var(--green)">—</div>
+          <div class="metric-sub"   id="mPriceSub">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Biến động / Volatility</div>
+          <div class="metric-value" id="mVolVal" style="color:var(--green)">—</div>
+          <div class="metric-sub"   id="mVolSub">Annualized</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Sharpe Ratio</div>
+          <div class="metric-value" id="mSharpeVal" style="color:var(--green)">—</div>
+          <div class="metric-sub"   id="mSharpeSub">&gt; 1.0 là tốt</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Beta (vs VN-Index)</div>
+          <div class="metric-value" id="mBetaVal" style="color:var(--amber)">—</div>
+          <div class="metric-sub"   id="mBetaSub">&lt; 1: ít rủi ro hơn TT</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Max Drawdown</div>
+          <div class="metric-value" id="mDrawdownVal" style="color:var(--red)">—</div>
+          <div class="metric-sub"   id="mDrawdownSub">Mức giảm tối đa</div>
+        </div>
+      </div>
+
+      <div class="risk-row">
+        <span class="risk-row-label">Mức độ rủi ro / Risk Level:</span>
+        <span class="risk-badge risk-low" id="riskBadge">—</span>
+      </div>
+
+      <div class="section-title">Biến động giá / Price Action</div>
+      <div class="chart-box"><div id="chartCandle"></div></div>
+
+      <div class="charts-bottom">
+        <div>
+          <div class="section-title">Khối lượng / Volume</div>
+          <div class="chart-box"><div id="chartVolume"></div></div>
+        </div>
+        <div>
+          <div class="section-title">Đường giá + Rolling Volatility</div>
+          <div class="chart-box"><div id="chartLine"></div></div>
+        </div>
+      </div>
+    </div><!-- /tab1 -->
+
+    <!-- ══════ TAB 2 ══════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab2">
+      <div class="compare-picker">
+        <div class="compare-picker-head">
+          <div>
+            <div class="section-title">Chọn cổ phiếu so sánh / Compare Stocks</div>
+            <p class="compare-picker-note">Mã đang phân tích sẽ luôn được dùng làm mốc so sánh.</p>
+          </div>
+          <span class="compare-base" id="compareBaseLabel">Base: —</span>
+        </div>
+        <div class="compare-list compare-list-grid" id="compareList"></div>
+      </div>
+
+      <div class="info-box" id="compareInfo">
+        Chọn thêm ít nhất 1 cổ phiếu ở phía trên để so sánh.<br/>
+        Select at least 1 more stock above to compare.
+      </div>
+      <div id="compareCharts" style="display:none">
+        <div class="section-title">Giá chuẩn hóa / Normalized Price (Base = 100)</div>
+        <div class="chart-box"><div id="chartNorm"></div></div>
+        <div class="section-title">So sánh chỉ số rủi ro / Risk Metrics</div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr>
+              <th>Mã</th><th>Tên</th><th>Giá</th>
+              <th>Volatility</th><th>Sharpe</th><th>Beta</th>
+              <th>Max DD</th><th>Rủi ro</th>
+            </tr></thead>
+            <tbody id="compareBody"></tbody>
+          </table>
+        </div>
+        <div class="section-title">Biến động theo cổ phiếu / Volatility by Stock</div>
+        <div class="chart-box"><div id="chartVolBar"></div></div>
+      </div>
+    </div><!-- /tab2 -->
+
+    <!-- ══════ TAB 5 ══════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab5">
+      <div class="ai-analysis-layout">
+        <aside class="ai-control-panel">
+          <div class="section-title">🤖 Phân Tích AI / AI Risk Analysis</div>
+          <p class="ai-panel-note">Demo giao diện phân tích rủi ro bằng AI. Nội dung bên phải là mô phỏng, chưa gọi AI thật.</p>
+
+          <div class="ai-field">
+            <label for="aiStockSelect">Mã cổ phiếu</label>
+            <div class="select-wrapper">
+              <select id="aiStockSelect"></select>
+            </div>
+          </div>
+
+          <div class="ai-field">
+            <label>Khẩu vị rủi ro</label>
+            <div class="ai-segmented">
+              <button class="active" type="button">Thận trọng</button>
+              <button type="button">Cân bằng</button>
+              <button type="button">Mạo hiểm</button>
+            </div>
+          </div>
+
+          <div class="ai-field">
+            <label>Góc nhìn phân tích</label>
+            <div class="ai-check-row">
+              <label><input type="checkbox" checked /> Biến động</label>
+              <label><input type="checkbox" checked /> Drawdown</label>
+              <label><input type="checkbox" checked /> Beta</label>
+            </div>
+          </div>
+
+          <button class="ai-run-btn" type="button" id="aiRunBtn">Tạo phân tích demo</button>
+        </aside>
+
+        <section class="ai-result-panel">
+          <div class="ai-result-head">
+            <div>
+              <span class="ai-kicker">AI DEMO OUTPUT</span>
+              <h3 id="aiResultTitle">—</h3>
+            </div>
+            <span class="ai-status-pill">Demo mode</span>
+          </div>
+
+          <div class="ai-summary-card">
+            <div class="ai-score">
+              <span id="aiRiskScore">—</span>
+              <small>Risk Score</small>
+            </div>
+            <div>
+              <h4 id="aiRiskHeadline">—</h4>
+              <p id="aiRiskSummary">—</p>
+            </div>
+          </div>
+
+          <div class="ai-insight-grid">
+            <div class="ai-insight-card">
+              <span>Volatility</span>
+              <strong id="aiVolValue">—</strong>
+              <p id="aiVolText">—</p>
+            </div>
+            <div class="ai-insight-card">
+              <span>Sharpe</span>
+              <strong id="aiSharpeValue">—</strong>
+              <p id="aiSharpeText">—</p>
+            </div>
+            <div class="ai-insight-card">
+              <span>Max Drawdown</span>
+              <strong id="aiDrawdownValue">—</strong>
+              <p id="aiDrawdownText">—</p>
+            </div>
+          </div>
+
+          <div class="ai-recommendation">
+            <h4>Kết luận mô phỏng</h4>
+            <ul id="aiRecommendationList"></ul>
+          </div>
+
+          <p class="ai-disclaimer">Đây là nội dung demo để minh họa trải nghiệm sản phẩm, không phải khuyến nghị đầu tư.</p>
+        </section>
+      </div>
+    </div><!-- /tab5 -->
+
+    <!-- ══════ TAB 3 ══════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab3">
+      <div class="section-title">📖 Thuật ngữ tài chính / Financial Glossary</div>
+      <div class="glossary-grid" id="glossaryGrid"></div>
+    </div>
+
+    <!-- ══════ TAB 4 ══════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab4">
+      <div class="community-header">
+        <div>
+          <div class="section-title">👥 Cộng đồng / Community</div>
+          <p class="community-subtitle">Theo dõi bài viết, trao đổi chiến lược và tham gia các hội nhóm đầu tư.</p>
+        </div>
+        <button class="community-primary-btn">＋ Tạo bài viết</button>
+      </div>
+
+      <div class="community-branches">
+        <section class="community-panel">
+          <div class="community-panel-head">
+            <span class="community-icon">📝</span>
+            <div>
+              <h3>Bài viết</h3>
+              <p>Phân tích, nhận định và ghi chú thị trường.</p>
+            </div>
+          </div>
+          <div class="community-list">
+            <article class="community-item">
+              <div class="community-item-title">Góc nhìn VNM sau nhịp điều chỉnh</div>
+              <div class="community-meta">Minh Anh · 12 phút trước · 18 lượt thích</div>
+            </article>
+            <article class="community-item">
+              <div class="community-item-title">Cách đọc volatility khi thị trường rung lắc</div>
+              <div class="community-meta">Alpha Team · 1 giờ trước · 34 lượt thích</div>
+            </article>
+            <article class="community-item">
+              <div class="community-item-title">Checklist quản trị rủi ro trước mùa báo cáo</div>
+              <div class="community-meta">Quang Huy · Hôm nay · 21 lượt thích</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="community-panel">
+          <div class="community-panel-head">
+            <span class="community-icon">💬</span>
+            <div>
+              <h3>Thảo luận</h3>
+              <p>Câu hỏi nhanh, phản biện và chia sẻ kịch bản.</p>
+            </div>
+          </div>
+          <div class="community-list">
+            <article class="community-item">
+              <div class="community-item-title">HPG có đang vào vùng tích lũy?</div>
+              <div class="community-meta">27 bình luận · Đang sôi nổi</div>
+            </article>
+            <article class="community-item">
+              <div class="community-item-title">Sharpe Ratio bao nhiêu là đủ tốt với cổ phiếu chu kỳ?</div>
+              <div class="community-meta">14 bình luận · 3 chuyên gia tham gia</div>
+            </article>
+            <article class="community-item">
+              <div class="community-item-title">So sánh FPT và MWG trong danh mục tăng trưởng</div>
+              <div class="community-meta">9 bình luận · Mới cập nhật</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="community-panel">
+          <div class="community-panel-head">
+            <span class="community-icon">👥</span>
+            <div>
+              <h3>Hội nhóm</h3>
+              <p>Không gian theo chủ đề để theo dõi cùng nhau.</p>
+            </div>
+          </div>
+          <div class="community-list">
+            <article class="community-item community-group-item">
+              <div>
+                <div class="community-item-title">Risk Management Lab</div>
+                <div class="community-meta">1.2k thành viên · Công khai</div>
+              </div>
+              <button class="community-join-btn">Tham gia</button>
+            </article>
+            <article class="community-item community-group-item">
+              <div>
+                <div class="community-item-title">Cổ phiếu tăng trưởng Việt Nam</div>
+                <div class="community-meta">860 thành viên · Công khai</div>
+              </div>
+              <button class="community-join-btn">Tham gia</button>
+            </article>
+            <article class="community-item community-group-item">
+              <div>
+                <div class="community-item-title">Phân tích kỹ thuật thực chiến</div>
+                <div class="community-meta">2.4k thành viên · Công khai</div>
+              </div>
+              <button class="community-join-btn">Tham gia</button>
+            </article>
+          </div>
+        </section>
+      </div>
+    </div>
+    <!-- TAB 6 -->
+    <div class="tab-panel" id="tab6">
+
+        <div class="metrics-row">
+            <div class="metric-card">
+                <div class="metric-label">Giá hiện tại</div>
+                <div class="metric-value" id="simPriceVal">—</div>
+                <div class="metric-sub" id="simPriceSub">—</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Volatility</div>
+                <div class="metric-value" id="simVolVal">—</div>
+                <div class="metric-sub" id="simVolSub">Annualized</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Sharpe Ratio</div>
+                <div class="metric-value" id="simSharpeVal">—</div>
+                <div class="metric-sub" id="simSharpeSub">Replay realtime</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Beta</div>
+                <div class="metric-value" id="simBetaVal">—</div>
+                <div class="metric-sub" id="simBetaSub">vs VN-Index</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Max Drawdown</div>
+                <div class="metric-value" id="simDrawdownVal">—</div>
+                <div class="metric-sub" id="simDrawdownSub">Replay history</div>
+            </div>
+        </div>
+
+
+        <div class="risk-row">
+            <span class="risk-row-label">Risk Level:</span>
+            <span class="risk-badge risk-low" id="simRiskBadge">—</span>
+        </div>
+
+
+        <div class="section-title">
+            🎬 Market Replay
+        </div>
+
+        <div class="chart-box">
+
+            <div class="replay-toolbar">
+
+                <button id="replayBackBtn">⏮</button>
+
+                <button id="replayPauseBtn">⏸</button>
+
+                <button id="replayPlayBtn">▶</button>
+
+                <button id="replayForwardBtn">⏭</button>
+
+                <input
+                    id="replaySlider"
+                    type="range"
+                    min="1"
+                    max="365"
+                    value="365"
+                >
+
+                <span id="replayDayLabel">
+                    Day 365 / 365
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="section-title">
+            Biến động giá
+        </div>
+
+        <div class="chart-box">
+            <div id="simChartCandle"></div>
+        </div>
+
+
+        <div class="charts-bottom">
+
+            <div>
+                <div class="section-title">Khối lượng</div>
+
+                <div class="chart-box">
+                    <div id="simChartVolume"></div>
+                </div>
+            </div>
+
+            <div>
+
+                <div class="section-title">
+                    Giá + Rolling Volatility
+                </div>
+
+                <div class="chart-box">
+                    <div id="simChartLine"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+      
+    </div>
+
+  </main>
+</div><!-- /app-body -->
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════════════════════════ -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span class="font-mono text-xs tracking-widest" style="color:#00ff9480">⚡ ALPHAQUANT</span>
+    <span class="text-xs text-muted">© 2026 AlphaQuant | TheNextX 2026 · Techcombank</span>
+    <span class="text-xs italic" style="color:#7a889980">
+      Dữ liệu chỉ mang tính chất tham khảo cho mục đích demo, không phải lời khuyên đầu tư.
+    </span>
+  </div>
+</footer>
+
+<!-- ─── CHATBOT WIDGET ──────────────────────────────────────────────── -->
+<div id="chatbotWidget">
+  <div id="chatWindow" class="chat-hidden">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <img src="assets/chatbot.png" class="chat-avatar-sm" alt="AI" />
+        <div>
+          <div class="chat-title">AlphaQuant AI</div>
+          <div class="chat-subtitle">Trợ lý phân tích rủi ro</div>
+        </div>
+      </div>
+      <button id="chatCloseBtn" class="chat-close-btn">&times;</button>
+    </div>
+    <div id="chatMessages" class="chat-messages">
+      <div class="chat-msg ai">
+        <span>Chào bạn! Mình là AI của AlphaQuant, hỗ trợ bạn phân tích và hiểu chứng khoán dễ dàng hơn. 📊</span>
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <input id="chatInput" type="text" placeholder="Nhập câu hỏi..." autocomplete="off" />
+      <button id="chatSendBtn">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M2 10l16-8-6 16-3-5-7-3z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="chatTooltip" class="chat-tooltip">
+    Mình là AI Assistant của AlphaQuant, luôn sẵn sàng hỗ trợ bạn 💬
+    <button id="chatTooltipClose" class="chat-tooltip-close">&times;</button>
+  </div>
+
+  <button id="chatFab" title="Chat với AI">
+    <img src="assets/chatbot.png" alt="Chat AI" />
+  </button>
+
+  
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="supabase.js"></script>
+
+
+<script src="auth.js"></script>
+
+</body>
+</html>
