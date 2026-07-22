@@ -47,6 +47,42 @@ function generateStockData(ticker, days = 365) {
   }));
 }
 
+async function loadStockData(tickers) {
+  if (!window.supabaseClient) {
+    throw new Error('Supabase client is unavailable');
+  }
+
+  const rows = [];
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabaseClient
+      .from('stock_prices')
+      .select('symbol, trading_date, open, high, low, close, volume')
+      .in('symbol', tickers)
+      .order('trading_date', { ascending: true })
+      .order('symbol', { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < pageSize) break;
+  }
+
+  const dataByTicker = Object.fromEntries(tickers.map(ticker => [ticker, []]));
+  for (const row of rows) {
+    dataByTicker[row.symbol].push({
+      date: new Date(`${row.trading_date}T00:00:00`),
+      open: Number(row.open),
+      high: Number(row.high),
+      low: Number(row.low),
+      close: Number(row.close),
+      volume: Number(row.volume),
+    });
+  }
+
+  return dataByTicker;
+}
+
 function computeMetrics(rows) {
   const closes  = rows.map(r => r.close);
   const rets    = closes.slice(1).map((c, i) => (c - closes[i]) / closes[i]);
@@ -1122,9 +1158,19 @@ async function init() {
   STATE.glossary  = json.glossary;
   await loadProductGuides();
 
-  /* Pre-generate data */
-  for (const ticker of Object.keys(STATE.stocks)) {
-    STATE.allData[ticker] = generateStockData(ticker, 365);
+  const tickers = Object.keys(STATE.stocks);
+  try {
+    const realData = await loadStockData(tickers);
+    for (const ticker of tickers) {
+      STATE.allData[ticker] = realData[ticker].length
+        ? realData[ticker]
+        : generateStockData(ticker, 365);
+    }
+  } catch (err) {
+    console.warn('Không thể tải dữ liệu Supabase; dùng dữ liệu demo:', err);
+    for (const ticker of tickers) {
+      STATE.allData[ticker] = generateStockData(ticker, 365);
+    }
   }
 
   initTabs();
