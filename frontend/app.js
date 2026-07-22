@@ -48,6 +48,7 @@ function generateStockData(ticker, days = 365) {
 }
 
 async function loadStockData(tickers) {
+  console.log("Tickers:", tickers);
   if (!window.supabaseClient) {
     throw new Error('Supabase client is unavailable');
   }
