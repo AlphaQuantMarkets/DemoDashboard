@@ -818,15 +818,22 @@ function render() {
   renderReplay();
 }
 function renderMetrics(m, prefix = 'm', labels = {}) {
+  // Validation
+  if (!m || typeof m !== 'object') {
+    console.error('Invalid metrics object:', m);
+    return;
+  }
+
   const cards = [
-    { id: 'mPrice',    value: m.current.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+    { id: 'mPrice',    value: m.current ? m.current.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '—',
       sub: `${m.changePct >= 0 ? '🔺' : '🔻'} ${m.changePct >= 0 ? '+' : ''}${m.changePct.toFixed(2)}%`,
       color: m.changePct >= 0 ? 'var(--green)' : 'var(--red)' },
-    { id: 'mVol',      value: `${(m.volAnn * 100).toFixed(1)}%`, sub: labels.volSub ?? 'Annualized', color: 'var(--green)' },
-    { id: 'mSharpe',   value: m.sharpe.toFixed(2), sub: labels.sharpeSub ?? '> 1.0 là tốt', color: 'var(--green)' },
-    { id: 'mBeta',     value: m.beta.toFixed(2),   sub: labels.betaSub ?? '< 1: ít rủi ro', color: 'var(--amber)' },
-    { id: 'mDrawdown', value: `${(m.maxDD * 100).toFixed(1)}%`, sub: labels.drawdownSub ?? 'Mức giảm tối đa', color: 'var(--red)' },
+    { id: 'mVol',      value: m.volAnn ? `${(m.volAnn * 100).toFixed(1)}%` : '—', sub: labels.volSub ?? 'Annualized', color: 'var(--green)' },
+    { id: 'mSharpe',   value: m.sharpe ? m.sharpe.toFixed(2) : '—', sub: labels.sharpeSub ?? '> 1.0 là tốt', color: 'var(--green)' },
+    { id: 'mBeta',     value: m.beta ? m.beta.toFixed(2) : '—',   sub: labels.betaSub ?? '< 1: ít rủi ro', color: 'var(--amber)' },
+    { id: 'mDrawdown', value: m.maxDD ? `${(m.maxDD * 100).toFixed(1)}%` : '—', sub: labels.drawdownSub ?? 'Mức giảm tối đa', color: 'var(--red)' },
   ];
+  
   for (const c of cards) {
     const id = prefix + c.id.slice(1);
     const valEl = document.getElementById(id + 'Val');
