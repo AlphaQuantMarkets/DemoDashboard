@@ -8,8 +8,9 @@ window.supabaseClient = window.supabase.createClient(
 
 async function testConnection() {
     const { data, error } = await supabaseClient
-        .from("profiles")
-        .select("*");
+        .from("stock_prices")
+        .select("*")
+        .limit(5);
 
     console.log("Data:", data);
     console.log("Error:", error);
