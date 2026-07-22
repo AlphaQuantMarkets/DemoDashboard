@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
+    "update-data": "node update-data.js",
+    "dev": "nodemon update-data.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -20,10 +22,16 @@
   },
   "homepage": "https://github.com/AlphaQuantMarkets/DemoDashboard#readme",
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "axios": "^1.6.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "node-cron": "^3.0.2",
     "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }

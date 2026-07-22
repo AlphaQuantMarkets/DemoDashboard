@@ -48,42 +48,82 @@ function generateStockData(ticker, days = 365) {
 }
 
 async function loadStockData(tickers) {
-  console.log("Tickers:", tickers);
+  console.log("📥 Loading real data from Supabase for tickers:", tickers);
+  
   if (!window.supabaseClient) {
     throw new Error('Supabase client is unavailable');
   }
 
-  const rows = [];
-  const pageSize = 1000;
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabaseClient
-      .from('stock_prices')
-      .select('symbol, trading_date, open, high, low, close, volume')
-      .in('symbol', tickers)
-      .order('trading_date', { ascending: true })
-      .order('symbol', { ascending: true })
-      .range(from, from + pageSize - 1);
+  try {
+    const rows = [];
+    const pageSize = 1000;
+    
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await window.supabaseClient
+        .from('stock_prices')
+        .select('symbol, trading_date, open, high, low, close, volume')
+        .in('symbol', tickers)
+        .order('trading_date', { ascending: true })
+        .range(from, from + pageSize - 1);
 
-    if (error) throw error;
-    rows.push(...data);
-    if (data.length < pageSize) break;
+      if (error) {
+        console.error('❌ Supabase select error:', error);
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        if (from === 0) {
+          console.warn('⚠️ No data found for symbols:', tickers);
+          console.warn('Make sure to run: python backend/fetch_stock_data.py');
+        }
+        break;
+      }
+
+      rows.push(...data);
+      console.log(`  Fetched batch ${Math.floor(from/pageSize) + 1}: ${data.length} rows`);
+      
+      if (data.length < pageSize) break;
+    }
+
+    console.log(`✅ Total: ${rows.length} records from Supabase`);
+
+    // Group by ticker
+    const dataByTicker = {};
+    for (const ticker of tickers) {
+      dataByTicker[ticker] = [];
+    }
+
+    for (const row of rows) {
+      if (dataByTicker[row.symbol]) {
+        dataByTicker[row.symbol].push({
+          date: new Date(`${row.trading_date}T00:00:00Z`),
+          open: Number(row.open),
+          high: Number(row.high),
+          low: Number(row.low),
+          close: Number(row.close),
+          volume: Number(row.volume),
+        });
+      }
+    }
+
+    // Limit to last 500 days per ticker & sort by date
+    for (const ticker of tickers) {
+      let data = dataByTicker[ticker];
+      if (data.length > 500) {
+        data = data.slice(-500);
+      }
+      // Ensure sorted ascending by date
+      data.sort((a, b) => a.date - b.date);
+      dataByTicker[ticker] = data;
+      console.log(`  ${ticker}: ${data.length} days (${data[0]?.date.toDateString()} → ${data[data.length-1]?.date.toDateString()})`);
+    }
+
+    return dataByTicker;
+  } catch (error) {
+    console.error('❌ Failed to load stock data:', error.message);
+    throw error;
   }
-
-  const dataByTicker = Object.fromEntries(tickers.map(ticker => [ticker, []]));
-  for (const row of rows) {
-    dataByTicker[row.symbol].push({
-      date: new Date(`${row.trading_date}T00:00:00`),
-      open: Number(row.open),
-      high: Number(row.high),
-      low: Number(row.low),
-      close: Number(row.close),
-      volume: Number(row.volume),
-    });
-  }
-
-  return dataByTicker;
 }
-
 function computeMetrics(rows) {
   const closes  = rows.map(r => r.close);
   const rets    = closes.slice(1).map((c, i) => (c - closes[i]) / closes[i]);
@@ -556,10 +596,15 @@ function renderWatchlist() {
   container.innerHTML = '';
 
   STATE.watchlist.forEach(ticker => {
-    if (!STATE.allData[ticker]) return;
-    const rows = STATE.allData[ticker].slice(-1)[0];
-    const m    = computeMetrics(STATE.allData[ticker].slice(-30));
-    const price = rows.close.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    // Validation: check data exists
+    if (!STATE.allData[ticker] || STATE.allData[ticker].length === 0) {
+      console.warn(`⚠️ No data for ${ticker}, skipping watchlist item`);
+      return; // Skip this ticker
+    }
+
+    const rows = STATE.allData[ticker];
+    const m    = computeMetrics(rows.slice(-30));
+    const price = rows[rows.length - 1].close.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     const up    = m.changePct >= 0;
 
     const item = document.createElement('div');
@@ -577,7 +622,7 @@ function renderWatchlist() {
       </div>
       <button class="watchlist-remove" data-ticker="${ticker}" title="Xóa khỏi watchlist">✕</button>
     `;
-    /* click row → select stock */
+    
     item.addEventListener('click', e => {
       if (e.target.closest('.watchlist-remove')) return;
       STATE.selected = ticker;
@@ -586,12 +631,13 @@ function renderWatchlist() {
       buildCompareList();
       render();
     });
-    /* remove button */
+    
     item.querySelector('.watchlist-remove').addEventListener('click', e => {
       e.stopPropagation();
       STATE.watchlist = STATE.watchlist.filter(t => t !== ticker);
       renderWatchlist();
     });
+    
     container.appendChild(item);
   });
 }
@@ -742,19 +788,35 @@ function setText(id, value) {
 }
 
 function render() {
-  if (!STATE.selected) return;
-  const rows = STATE.allData[STATE.selected].slice(-STATE.period);
-  const m    = computeMetrics(rows);
+  if (!STATE.selected) {
+    console.warn('No stock selected');
+    return;
+  }
+
+  // Validation: check selected stock has data
+  const rows = STATE.allData[STATE.selected];
+  if (!rows || rows.length === 0) {
+    console.error(`❌ No data for selected stock: ${STATE.selected}`);
+    alert(`No data available for ${STATE.selected}. Please select another stock.`);
+    return;
+  }
+
+  const slicedRows = rows.slice(-STATE.period);
+  if (slicedRows.length === 0) {
+    console.error(`❌ Period too long for ${STATE.selected} (only ${rows.length} days available)`);
+    return;
+  }
+
+  const m    = computeMetrics(slicedRows);
   renderMetrics(m);
   renderRiskBadge(m);
-  renderCandlestick(rows);
-  renderVolume(rows);
-  renderPriceLine(rows);
+  renderCandlestick(slicedRows);
+  renderVolume(slicedRows);
+  renderPriceLine(slicedRows);
   renderComparison();
   renderAIAnalysis();
   renderReplay();
 }
-
 function renderMetrics(m, prefix = 'm', labels = {}) {
   const cards = [
     { id: 'mPrice',    value: m.current.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
@@ -1153,16 +1215,44 @@ function initProductGuidePanel() {
    ═══════════════════════════════════════════════════════════════════════ */
 async function init() {
   window.scrollTo({ top: 0, behavior: 'instant' });
+  
   const res       = await fetch('stocks.json');
   const json      = await res.json();
   STATE.stocks    = json.stocks;
   STATE.glossary  = json.glossary;
   await loadProductGuides();
 
-  const tickers = Object.keys(STATE.stocks);
-  const realData = await loadStockData(tickers);
+  // ========== REAL DATA FROM SUPABASE ==========
+  const tickers = ['FPT', 'HPG', 'VNM']; // Only 3 symbols
+  console.log('🔄 Initializing with real data from Supabase...');
 
-  STATE.allData = realData;
+  try {
+    const realData = await loadStockData(tickers);
+    
+    // Verify data loaded successfully
+    const hasData = Object.values(realData).some(arr => arr.length > 0);
+    if (!hasData) {
+      throw new Error('No data returned from Supabase');
+    }
+    
+    STATE.allData = realData;
+    STATE.selected = STATE.selected || 'FPT'; // Default to FPT
+    console.log('✅ Real data loaded successfully');
+    
+    // Clear old fake data cache
+    try {
+      localStorage.removeItem('fakeStockCache');
+      sessionStorage.clear();
+    } catch (e) {
+      console.warn('Could not clear old cache');
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to load real data from Supabase:', error.message);
+    alert('⚠️ Không thể kết nối Supabase.\n\nVui lòng kiểm tra:\n1. Internet connection\n2. Supabase API keys\n3. Database has stock_prices data\n\nError: ' + error.message);
+    return; // Stop init if data fails
+  }
+  // ========================================
 
   initTabs();
   buildSidebar();
@@ -1177,7 +1267,7 @@ async function init() {
   updateClock();
   setInterval(updateClock, 1000);
 
-   /* Hide loader — tối thiểu 1000ms, guide chỉ chạy sau khi loader ẩn xong */
+   /* Hide loader */
   const overlay = document.getElementById('loadingOverlay');
   const loadStart = window.__loadStart || Date.now();
   const elapsed = Date.now() - loadStart;
@@ -1190,8 +1280,7 @@ async function init() {
     }, 500);
   }, remaining);
 
-
-/* ── Dropdown: hover qua item khác → đóng cũ, mở mới ngay, không bị gap ── */
+  /* Dropdown hover behavior */
   const allWraps = document.querySelectorAll('.topnav-dropdown-wrap');
   allWraps.forEach(wrap => {
     wrap.addEventListener('mouseenter', () => {
@@ -1200,9 +1289,7 @@ async function init() {
     });
     wrap.addEventListener('mouseleave', e => {
       const to = e.relatedTarget;
-      // Không đóng nếu chuột đang đi vào chính dropdown của wrap này
       if (wrap.contains(to)) return;
-      // Không đóng nếu chuột sang wrap khác (sẽ tự mở cái mới)
       if (to?.closest('.topnav-dropdown-wrap')) return;
       wrap.querySelector('.topnav-dropdown').classList.remove('dropdown-open');
     });
