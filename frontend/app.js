@@ -1160,19 +1160,9 @@ async function init() {
   await loadProductGuides();
 
   const tickers = Object.keys(STATE.stocks);
-  try {
-    const realData = await loadStockData(tickers);
-    for (const ticker of tickers) {
-      STATE.allData[ticker] = realData[ticker].length
-        ? realData[ticker]
-        : generateStockData(ticker, 365);
-    }
-  } catch (err) {
-    console.warn('Không thể tải dữ liệu Supabase; dùng dữ liệu demo:', err);
-    for (const ticker of tickers) {
-      STATE.allData[ticker] = generateStockData(ticker, 365);
-    }
-  }
+  const realData = await loadStockData(tickers);
+
+  STATE.allData = realData;
 
   initTabs();
   buildSidebar();
