@@ -85,7 +85,7 @@ def upsert_prices(client: Client, records: list[dict]) -> None:
         batch = records[start : start + UPSERT_BATCH_SIZE]
         client.table("stock_prices").upsert(
             batch,
-            on_conflict="symbol,trading_date",
+            on_conflict="symbol,trading_date"
         ).execute()
 
 
