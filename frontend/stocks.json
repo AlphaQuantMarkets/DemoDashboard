@@ -11,39 +11,104 @@
   },
   "glossary": [
     {
-      "term": "Volatility (Biến động)",
-      "vi": "Mức độ dao động của giá cổ phiếu theo thời gian. Volatility càng cao → rủi ro càng lớn, nhưng cơ hội lợi nhuận cũng nhiều hơn.",
-      "en": "Measures how much a stock's price fluctuates. Higher volatility = higher risk & potential reward."
+      "term": "Volatility",
+      "vi": "Độ hoang dã của giá — cổ phiếu càng chổng váy lên xuống → rủi ro cao hơn. Nhưng không ai kiếm tiền từ giá ổn định, phải không?",
+      "en": "How wild a stock's price swings. High volatility = higher risk AND higher upside potential."
     },
     {
       "term": "Sharpe Ratio",
-      "vi": "Tỷ suất sinh lời điều chỉnh theo rủi ro. Sharpe > 1.0 được coi là tốt — nghĩa là bạn được 'thưởng' xứng đáng cho rủi ro đã chấp nhận.",
-      "en": "Risk-adjusted return. Sharpe > 1.0 is generally good — you're being rewarded well for the risk taken."
+      "vi": "Bao nhiêu lợi nhuận bạn kiếm được trên mỗi đơn vị rủi ro. Sharpe > 1.0 = hoàn tiền đáng để chịu đựng cái stress đó.",
+      "en": "Your reward per unit of risk. Sharpe > 1.0 means the gains justify the pain you're taking."
     },
     {
-      "term": "Beta (β)",
-      "vi": "Đo lường độ nhạy cảm của cổ phiếu so với thị trường chung (VN-Index). Beta < 1: ít biến động hơn thị trường. Beta > 1: biến động mạnh hơn.",
-      "en": "Measures sensitivity vs the market. Beta < 1: less volatile. Beta > 1: more volatile than market."
+      "term": "Beta",
+      "vi": "Cổ phiếu bạn có 'theo thị trường' không? Beta < 1 = ngáo ở, Beta > 1 = lầy hơn bình thường.",
+      "en": "Is your stock marching with the market or going rogue? Beta < 1 = safer, Beta > 1 = wilder."
     },
     {
-      "term": "Max Drawdown (Mức giảm tối đa)",
-      "vi": "Mức sụt giảm lớn nhất từ đỉnh cao nhất xuống đáy thấp nhất trong kỳ. Ví dụ: -30% nghĩa là cổ phiếu từng giảm 30% từ đỉnh.",
-      "en": "The largest peak-to-trough decline. E.g. -30% means the stock once fell 30% from its peak."
+      "term": "Max Drawdown",
+      "vi": "Cái \"ouch\" lớn nhất khi cổ phiếu rơi từ đỉnh cao xuống. Nếu -40%, tức là bạn từng mất 40% giá trị tấm lót từ điểm tốt nhất.",
+      "en": "The nastiest drop from peak to trough. If it's -40%, you once lost 40% from your best day."
     },
     {
-      "term": "Candlestick Chart (Biểu đồ nến)",
-      "vi": "Loại biểu đồ hiển thị 4 giá: mở cửa, đóng cửa, cao nhất, thấp nhất. Nến xanh = giá tăng. Nến đỏ = giá giảm.",
-      "en": "Chart showing open, close, high & low prices. Green candle = price up. Red candle = price down."
+      "term": "Candlestick Chart",
+      "vi": "Cách chuyên nghiệp để xem giá mở, đóng, cao, thấp trong mỗi phiên. Nến xanh = vui. Nến đỏ = lo.",
+      "en": "Shows open, close, high & low for each period. Green = good day, Red = ouch day."
     },
     {
       "term": "Rolling Volatility",
-      "vi": "Biến động được tính liên tục theo cửa sổ thời gian trượt (ví dụ: 20 ngày gần nhất). Cho thấy rủi ro thay đổi như thế nào theo thời gian.",
-      "en": "Volatility calculated over a rolling window (e.g. last 20 days). Shows how risk evolves over time."
+      "vi": "Biến động được cập nhật liên tục, giống như bạn kiểm tra tin tức mỗi buổi sáng. Cho thấy rủi ro 'nóng' từng lúc như thế nào.",
+      "en": "Volatility that updates constantly, showing you the real-time risk temperature."
     },
     {
-      "term": "Normalized Price (Giá chuẩn hóa)",
-      "vi": "Quy đổi giá về cùng gốc 100 để so sánh hiệu suất giữa các cổ phiếu khác giá nhau một cách công bằng.",
-      "en": "Rebases all prices to 100 for fair performance comparison across stocks with different price levels."
+      "term": "Normalized Price",
+      "vi": "Quy đổi tất cả giá về 100 để so sánh công bằng. Dù VNM giá cao hay thấp, bạn cũng thấy ai tăng %% nhiều hơn.",
+      "en": "Reset all prices to 100 so you can fairly compare performance regardless of price level."
+    },
+    {
+      "term": "Risk Level",
+      "vi": "Tổng hợp của volatility, beta, drawdown → xanh (an toàn) hay đỏ (rủi ro cao). Nhanh gọn để quyết định.",
+      "en": "Your quick risk checkup: green (play it safe) to red (buckle up)."
+    },
+    {
+      "term": "Volume",
+      "vi": "Bao nhiêu cổ phiếu thay tay mỗi ngày. Volume cao = người quan tâm nhiều, dễ mua/bán. Volume thấp = chỉ có bạn và ba người khác.",
+      "en": "How many shares changed hands. High volume = liquid, easy to move. Low volume = risky to enter/exit."
+    },
+    {
+      "term": "Market Replay",
+      "vi": "Chơi lại lịch sử thị trường theo thời gian thực. Học từ quá khứ mà không mất tiền — cheat code để hiểu thị trường.",
+      "en": "Rewind history at your pace. See how your pick would've performed without risking real cash."
+    },
+    {
+      "term": "Drawdown Recovery",
+      "vi": "Sau khi cổ phiếu rơi -40%, nó cần tăng bao nhiêu % để bình phục? Gợi ý: hơn 67%. Math of loss là khắc nghiệt.",
+      "en": "After a -40% drop, you need 67% gain just to break even. That's the brutal math of losses."
+    },
+    {
+      "term": "VN-Index",
+      "vi": "Chỉ số toàn thị trường Việt Nam — benchmark để so sánh. Cổ phiếu của bạn thắng hay thua thị trường?",
+      "en": "Vietnam's market benchmark. Your personal scoreboard against the whole market."
+    },
+    {
+      "term": "Risk-Adjusted Return",
+      "vi": "Lợi nhuận là tốt, nhưng lợi nhuận so với cái rủi ro bạn chấp nhận mới là chuyện thực sự. Sharpe là công cụ đo lường nó.",
+      "en": "Profit is sexy, but profit per risk taken is the real metric that matters."
+    },
+    {
+      "term": "Correlation",
+      "vi": "Hai cổ phiếu có \"theo bước\" nhau không? Nếu yes, bạn không phải đa dạng hóa gì cả, chỉ mở rộng cùng một cuộc cược.",
+      "en": "Do two stocks dance together? If yes, you're not diversifying, just betting the same thing twice."
+    },
+    {
+      "term": "Liquidity",
+      "vi": "Dễ mua/bán cổ phiếu bất kỳ lúc nào không? High liquidity = không bị trapped. Low = có thể stuck với tấm lót.",
+      "en": "Can you get in and out easily? High liquidity = freedom. Low = you might be trapped."
+    },
+    {
+      "term": "Fair Value",
+      "vi": "Giá \"công bằng\" dựa trên hiệu suất thực. Nếu giá hiện tại cao hơn → overvalued (pump?), thấp hơn → undervalued (deal?).",
+      "en": "What the stock should theoretically be worth. Market price ≠ fair value, and that gap is where money is made."
+    },
+    {
+      "term": "Momentum",
+      "vi": "Cổ phiếu có \"lực\" đi lên hay đi xuống không? Momentum cao = xu hướng mạnh, chuẩn bị thay đổi.",
+      "en": "Does the stock have upward or downward force? High momentum suggests the trend might keep going—until it doesn't."
+    },
+    {
+      "term": "Support & Resistance",
+      "vi": "Support = tầng dưới mà giá khó xuyên qua (có người mua). Resistance = tầng trên mà giá khó vượt (có người bán).",
+      "en": "Support = price floor where buyers step in. Resistance = price ceiling where sellers appear."
+    },
+    {
+      "term": "Diversification",
+      "vi": "Không đặt tất cả trứng vào một giỏ. Nếu cổ phiếu ấy rơi, ít nhất bạn còn những cái khác.",
+      "en": "Spread your bets. One stock cratering doesn't wreck your whole portfolio."
+    },
+    {
+      "term": "Due Diligence",
+      "vi": "Làm homework trước khi bỏ tiền vào. Đọc báo cáo, hiểu business, kiểm tra con số. Không invest mù mờ.",
+      "en": "Do your homework before throwing cash at it. Read reports, understand the business, check the math."
     }
   ]
 }

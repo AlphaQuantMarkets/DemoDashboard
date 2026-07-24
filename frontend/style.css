@@ -670,27 +670,26 @@ input[type=range] {
   color: var(--muted); font-size: 0.85rem; text-align: center; margin-top: 16px;
 }
 
-/* Product feature fixed guide panel */
+/* Product feature hover guide */
 .product-guide-panel {
   position: fixed;
-  left: 18px;
-  bottom: calc(var(--footer-h) + 18px);
+  left: 12px;
+  top: 12px;
   z-index: 100200;
-  width: 230px;
-  height: 230px;
+  width: min(300px, calc(100vw - 24px));
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 9px;
-  background: rgba(8, 19, 34, 0.96);
-  border: 1px solid rgba(126, 200, 227, 0.55);
-  border-radius: 8px;
-  box-shadow: 0 18px 46px rgba(0,0,0,0.56), 0 0 24px rgba(0,255,148,0.12);
-  padding: 18px;
+  gap: 10px;
+  background: rgba(6, 16, 30, 0.98);
+  border: 1px solid rgba(126, 200, 227, 0.62);
+  border-radius: 12px;
+  box-shadow: 0 16px 34px rgba(0,0,0,0.48), 0 0 0 1px rgba(0,255,148,0.05);
+  padding: 17px 18px 16px;
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(8px) scale(0.98);
+  transform: translateY(5px) scale(0.985);
   transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s linear 0.16s;
 }
 .product-guide-panel.visible {
@@ -699,14 +698,15 @@ input[type=range] {
   transform: translateY(0) scale(1);
   transition-delay: 0s;
 }
+.product-guide-panel.measuring { visibility: hidden; }
 .product-guide-kicker {
-  color: #ffffff;
+  color: #7ec8e3;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.63rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  opacity: 0.76;
+  opacity: 0.9;
 }
 .product-guide-category {
   align-self: flex-start;
@@ -720,23 +720,33 @@ input[type=range] {
   line-height: 1;
 }
 .product-guide-title {
-  color: #00ff94;
-  font-size: 1.22rem;
+  color: #f5fbff;
+  font-size: 1.12rem;
   font-weight: 800;
-  line-height: 1.18;
+  line-height: 1.2;
 }
 .product-guide-summary {
-  color: #f6fbff;
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.32;
+  color: #dcebf4;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.42;
 }
 .product-guide-example {
-  color: #b6c6d8;
+  color: #a9c0d0;
   font-size: 0.82rem;
-  line-height: 1.35;
+  line-height: 1.42;
   border-top: 1px solid rgba(255,255,255,0.12);
-  padding-top: 10px;
+  padding-top: 11px;
+}
+.product-guide-content_title {
+  display: block;
+  margin-bottom: 4px;
+  color: #ff806d;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
 }
 
 /* AI Risk Analysis */
@@ -2048,15 +2058,12 @@ input[type=range] {
   #chatWindow { width: calc(100vw - 24px); right: 12px; }
 
   .product-guide-panel {
-    left: 12px;
-    bottom: 12px;
-    width: 190px;
-    height: 190px;
-    padding: 14px;
-    gap: 7px;
+    width: min(280px, calc(100vw - 24px));
+    padding: 15px 16px 14px;
+    gap: 8px;
   }
-  .product-guide-title { font-size: 1.02rem; }
-  .product-guide-summary { font-size: 0.88rem; }
+  .product-guide-title { font-size: 1rem; }
+  .product-guide-summary { font-size: 0.84rem; }
   .product-guide-example { font-size: 0.72rem; padding-top: 7px; }
 }
 
@@ -2071,8 +2078,4 @@ input[type=range] {
 
   /* Search ẩn hẳn */
   .topnav-search { display: none; }
-}
-
-.product-guide-content_title {
-  color: tomato;
 }

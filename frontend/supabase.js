@@ -44,8 +44,8 @@ async function testConnection() {
     
     if (!data || data.length === 0) {
       console.warn('⚠️ WARNING: Table stock_prices is empty!');
-      console.warn('Run Python script to populate data first:');
-      console.warn('  python backend/fetch_stock_data.py');
+      console.warn('Run the Python updater to populate data first:');
+      console.warn('  python backend/update_stock.py');
     }
     
   } catch (error) {
