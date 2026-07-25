@@ -1,5 +1,9 @@
 console.log("auth.js đã được load");
 
+const API_BASE_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? `${window.location.protocol}//${window.location.host}`
+    : "https://alphaquant-api-cg7b.onrender.com";
+
 let authMode = "login";
 
 function openModal(type) {
@@ -28,7 +32,7 @@ function closeModal() {
 async function signUp(username, password) {
 
     const response = await fetch(
-        "https://alphaquant-api-cg7b.onrender.com/api/auth/signup",
+        `${API_BASE_URL}/api/auth/signup`,
         {
             method: "POST",
             headers: {
@@ -100,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function login(username, password) {
 
     const response = await fetch(
-        "https://alphaquant-api-cg7b.onrender.com/api/auth/login",
+        `${API_BASE_URL}/api/auth/login`,
         {
             method: "POST",
             headers: {
