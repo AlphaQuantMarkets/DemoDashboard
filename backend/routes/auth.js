@@ -1,6 +1,9 @@
 const express = require("express");
+const bcrypt = require("bcrypt");
 const router = express.Router();
 const pool = require("../db");
+
+const SALT_ROUNDS = 10;
 
 router.use((req, res, next) => {
     if (!process.env.DATABASE_URL) {
@@ -14,19 +17,18 @@ router.use((req, res, next) => {
 
 router.post("/signup", async (req, res) => {
 
-    console.log("===== SIGNUP REQUEST =====");
-    console.log(req.body);
-
     const { username, password } = req.body;
 
     try {
+        const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
         const result = await pool.query(
             `
             INSERT INTO users(username, password)
             VALUES ($1, $2)
-            RETURNING *
+            RETURNING id, username
             `,
-            [username, password]
+            [username, passwordHash]
         );
 
         res.status(201).json(result.rows[0]);
@@ -72,7 +74,9 @@ router.post("/login", async (req, res) => {
 
         const user = result.rows[0];
 
-        if (user.password !== password) {
+        const passwordMatches = await bcrypt.compare(password, user.password);
+
+        if (!passwordMatches) {
             return res.status(401).json({
                 error: "Sai mật khẩu."
             });

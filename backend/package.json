@@ -7,6 +7,7 @@
     "start": "node server.js",
     "update-data": "node update-data.js",
     "dev": "nodemon update-data.js",
+    "migrate:passwords": "node migrations/0000-rehash-existing-passwords.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
