@@ -48,13 +48,7 @@ async function signUp(username, password) {
         return;
     }
 
-    localStorage.setItem(
-        "user",
-        JSON.stringify({
-            id: data.id,
-            username: data.username
-        })
-    );
+    localStorage.setItem("authToken", data.token);
 
     alert("Đăng ký thành công!");
 
@@ -126,10 +120,7 @@ async function login(username, password) {
         return;
     }
 
-    localStorage.setItem(
-        "user",
-        JSON.stringify(data.user)
-    );
+    localStorage.setItem("authToken", data.token);
 
     alert("Đăng nhập thành công!");
 
@@ -139,14 +130,43 @@ async function login(username, password) {
 }
 function logout() {
 
-    localStorage.removeItem("user");
+    localStorage.removeItem("authToken");
 
     updateNavbar();
 
 }
+
+function decodeToken(token) {
+    try {
+        const payload = token.split(".")[1];
+        return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    } catch {
+        return null;
+    }
+}
+
+function getCurrentUser() {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+        return null;
+    }
+
+    const payload = decodeToken(token);
+
+    if (!payload || (payload.exp && Date.now() >= payload.exp * 1000)) {
+        return null;
+    }
+
+    return {
+        id: payload.id,
+        username: payload.username
+    };
+}
+
 function updateNavbar() {
 
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = getCurrentUser();
 
     const loginBtn = document.getElementById("loginBtn");
     const signupBtn = document.getElementById("signupBtn");
@@ -178,6 +198,7 @@ function updateNavbar() {
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.logout = logout;
+window.getCurrentUser = getCurrentUser;
 
 document.addEventListener("DOMContentLoaded", () => {
 

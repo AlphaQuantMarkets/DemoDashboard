@@ -1572,11 +1572,7 @@ function buildSidebar() {
 }
 
 
-const currentUser = JSON.parse(
-    localStorage.getItem("user")
-);
-
-console.log(currentUser);
+const currentUser = window.getCurrentUser();
 
 window.updateNavbar = updateNavbar;
 window.logout = logout;

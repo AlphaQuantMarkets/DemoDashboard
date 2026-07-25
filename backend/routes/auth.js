@@ -1,21 +1,38 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const router = express.Router();
 const pool = require("../db");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const SALT_ROUNDS = 10;
+const TOKEN_EXPIRY = "7d";
 
-router.use((req, res, next) => {
+function signToken(user) {
+    return jwt.sign(
+        { id: user.id, username: user.username },
+        process.env.JWT_SECRET,
+        { expiresIn: TOKEN_EXPIRY }
+    );
+}
+
+function requireAuthReady(req, res, next) {
     if (!process.env.DATABASE_URL) {
         return res.status(503).json({
             error: "DATABASE_URL is not configured"
         });
     }
 
-    next();
-});
+    if (!process.env.JWT_SECRET) {
+        return res.status(503).json({
+            error: "JWT_SECRET is not configured"
+        });
+    }
 
-router.post("/signup", async (req, res) => {
+    next();
+}
+
+router.post("/signup", requireAuthReady, async (req, res) => {
 
     const { username, password } = req.body;
 
@@ -31,7 +48,13 @@ router.post("/signup", async (req, res) => {
             [username, passwordHash]
         );
 
-        res.status(201).json(result.rows[0]);
+        const user = result.rows[0];
+
+        res.status(201).json({
+            id: user.id,
+            username: user.username,
+            token: signToken(user)
+        });
 
     } catch (err) {
 
@@ -51,7 +74,7 @@ router.post("/signup", async (req, res) => {
 
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", requireAuthReady, async (req, res) => {
 
     const { username, password } = req.body;
 
@@ -87,7 +110,8 @@ router.post("/login", async (req, res) => {
             user: {
                 id: user.id,
                 username: user.username
-            }
+            },
+            token: signToken(user)
         });
 
     } catch (err) {
@@ -100,6 +124,12 @@ router.post("/login", async (req, res) => {
 
     }
 
+});
+
+router.get("/me", authMiddleware, (req, res) => {
+    res.json({
+        user: req.user
+    });
 });
 
 module.exports = router;

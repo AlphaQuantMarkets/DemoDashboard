@@ -15,9 +15,15 @@
   async function askTutor({ question, userLevel, stockContext }) {
     let response;
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       response = await fetch(apiUrl('/api/ai/tutor'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ question, userLevel, stockContext })
       });
     } catch {
