@@ -1,17 +1,36 @@
-function isDevelopmentTutorMode() {
-    return process.env.AI_TUTOR_PREMIUM_MODE !== "required";
-}
+const pool = require("../db");
 
-function requirePremiumTutorAccess(req, res, next) {
-    if (isDevelopmentTutorMode()) {
-        req.tutorAccess = { mode: "development" };
-        return next();
+async function requirePremiumTutorAccess(req, res, next) {
+    if (!process.env.DATABASE_URL) {
+        return res.status(503).json({
+            error: "DATABASE_URL is not configured"
+        });
     }
 
-    return res.status(403).json({
-        error: "AI Investment Tutor requires a Premium subscription",
-        code: "PREMIUM_REQUIRED"
-    });
+    try {
+        const result = await pool.query(
+            "SELECT is_premium FROM users WHERE id = $1",
+            [req.user.id]
+        );
+
+        const isPremium = result.rows[0]?.is_premium === true;
+
+        if (!isPremium) {
+            return res.status(403).json({
+                error: "AI Investment Tutor requires a Premium subscription",
+                code: "PREMIUM_REQUIRED"
+            });
+        }
+
+        next();
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            error: "Unable to verify premium access."
+        });
+    }
 }
 
 module.exports = {

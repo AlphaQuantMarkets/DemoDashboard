@@ -49,5 +49,5 @@
     return answer;
   }
 
-  window.TutorApi = { askTutor };
+  window.TutorApi = { askTutor, apiUrl };
 })();

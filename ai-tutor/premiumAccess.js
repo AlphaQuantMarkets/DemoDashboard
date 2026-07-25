@@ -1,35 +1,25 @@
 (function createTutorPremiumAccess() {
-  const DEVELOPMENT_PREMIUM_KEY = 'alphaquant_tutor_development_premium';
+  async function getTutorAccess() {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      return { isPremium: false, user: null };
+    }
 
-  function readCurrentUser() {
     try {
-      return JSON.parse(localStorage.getItem('user')) || null;
+      const response = await fetch(window.TutorApi.apiUrl('/api/auth/me'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        return { isPremium: false, user: null };
+      }
+
+      const { user } = await response.json();
+      return { isPremium: user?.is_premium === true, user };
     } catch {
-      return null;
+      return { isPremium: false, user: null };
     }
   }
 
-  function isLocalDevelopment() {
-    return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
-  }
-
-  function userHasPremiumSubscription(user) {
-    return Boolean(user && (user.isPremium === true || user.subscription === 'premium' || user.plan === 'premium'));
-  }
-
-  function getTutorAccess() {
-    const user = readCurrentUser();
-    const isPremium = userHasPremiumSubscription(user)
-      || (isLocalDevelopment() && localStorage.getItem(DEVELOPMENT_PREMIUM_KEY) === 'true');
-
-    return { isPremium, user };
-  }
-
-  function enableDevelopmentPremiumAccess() {
-    if (!isLocalDevelopment()) return false;
-    localStorage.setItem(DEVELOPMENT_PREMIUM_KEY, 'true');
-    return true;
-  }
-
-  window.TutorPremiumAccess = { enableDevelopmentPremiumAccess, getTutorAccess };
+  window.TutorPremiumAccess = { getTutorAccess };
 })();

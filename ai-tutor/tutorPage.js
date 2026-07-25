@@ -36,10 +36,10 @@
     return error.message || 'Something went wrong. Please try again.';
   }
 
-  function initializePage() {
+  async function initializePage() {
     const premiumGate = document.getElementById('premiumGate');
     const tutorApp = document.getElementById('tutorApp');
-    const access = window.TutorPremiumAccess.getTutorAccess();
+    const access = await window.TutorPremiumAccess.getTutorAccess();
     premiumGate.hidden = access.isPremium;
     tutorApp.hidden = !access.isPremium;
     if (!access.isPremium) return;
@@ -149,7 +149,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('developmentUpgradeButton')?.addEventListener('click', () => {
-      if (window.TutorPremiumAccess.enableDevelopmentPremiumAccess()) initializePage();
+      initializePage();
     });
     initializePage();
   });

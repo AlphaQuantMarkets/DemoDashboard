@@ -4,8 +4,9 @@ const router = express.Router();
 const { askGemini } = require("../services/geminiServices");
 const { buildTutorPrompt } = require("../prompts/tutorPrompt");
 const { requirePremiumTutorAccess } = require("../services/tutorAccess");
+const authMiddleware = require("../middleware/authMiddleware");
 
-router.post("/tutor", requirePremiumTutorAccess, async (req, res) => {
+router.post("/tutor", authMiddleware, requirePremiumTutorAccess, async (req, res) => {
     try {
         const {
             question,

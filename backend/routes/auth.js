@@ -16,13 +16,17 @@ function signToken(user) {
     );
 }
 
-function requireAuthReady(req, res, next) {
+function requireDatabase(req, res, next) {
     if (!process.env.DATABASE_URL) {
         return res.status(503).json({
             error: "DATABASE_URL is not configured"
         });
     }
 
+    next();
+}
+
+function requireJwtSecret(req, res, next) {
     if (!process.env.JWT_SECRET) {
         return res.status(503).json({
             error: "JWT_SECRET is not configured"
@@ -32,7 +36,7 @@ function requireAuthReady(req, res, next) {
     next();
 }
 
-router.post("/signup", requireAuthReady, async (req, res) => {
+router.post("/signup", requireDatabase, requireJwtSecret, async (req, res) => {
 
     const { username, password } = req.body;
 
@@ -74,7 +78,7 @@ router.post("/signup", requireAuthReady, async (req, res) => {
 
 });
 
-router.post("/login", requireAuthReady, async (req, res) => {
+router.post("/login", requireDatabase, requireJwtSecret, async (req, res) => {
 
     const { username, password } = req.body;
 
@@ -126,10 +130,34 @@ router.post("/login", requireAuthReady, async (req, res) => {
 
 });
 
-router.get("/me", authMiddleware, (req, res) => {
-    res.json({
-        user: req.user
-    });
+router.get("/me", authMiddleware, requireDatabase, async (req, res) => {
+
+    try {
+        const result = await pool.query(
+            "SELECT id, username, is_premium FROM users WHERE id = $1",
+            [req.user.id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                error: "Không tìm thấy tài khoản."
+            });
+        }
+
+        res.json({
+            user: result.rows[0]
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            error: "Lỗi máy chủ."
+        });
+
+    }
+
 });
 
 module.exports = router;
