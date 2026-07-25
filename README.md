@@ -307,3 +307,9 @@ AlphaQuant tạo ra giá trị bằng cách:
 AlphaQuant là nền tảng phục vụ mục đích giáo dục và nghiên cứu.
 
 Mọi nội dung do AI tạo ra chỉ nhằm giải thích dữ liệu tài chính và hỗ trợ học tập. Hệ thống **không đưa ra khuyến nghị mua, bán hoặc nắm giữ bất kỳ loại chứng khoán nào**.
+
+---
+
+# Local Development
+
+To run the backend API locally, copy `backend/.env.example` to `backend/.env` and fill in the required values (see that file for what each variable does and which routes need it).

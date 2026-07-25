@@ -2,16 +2,39 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const path = require("path");
 const pool = require("./db");
 const authRoutes = require("./routes/auth");
 const aiRoutes = require("./routes/ai");
 
+const DEFAULT_DEV_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"];
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
+    : DEFAULT_DEV_ORIGINS;
+
+const apiRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please try again later." }
+});
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        callback(new Error("Not allowed by CORS"));
+    }
+}));
 app.use(express.json());
+app.use("/api", apiRateLimiter);
 app.use("/api/ai", aiRoutes);
 
 app.use("/api/auth", authRoutes);
@@ -65,6 +88,12 @@ app.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
         return res.status(400).json({
             error: "Invalid JSON request body"
+        });
+    }
+
+    if (err.message === "Not allowed by CORS") {
+        return res.status(403).json({
+            error: "Origin not allowed"
         });
     }
 
