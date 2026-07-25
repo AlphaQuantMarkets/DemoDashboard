@@ -4,8 +4,12 @@ dist/
 
 # Python
 venv/
+.venv/
 __pycache__/
 *.pyc
+
+# Logs
+*.log
 
 # Environment
 .env

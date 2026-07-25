@@ -310,6 +310,44 @@ Mọi nội dung do AI tạo ra chỉ nhằm giải thích dữ liệu tài chí
 
 ---
 
-# Local Development
+# Getting Started
 
-To run the backend API locally, copy `backend/.env.example` to `backend/.env` and fill in the required values (see that file for what each variable does and which routes need it).
+This project has two parts: a Node.js/Express backend API (`backend/`) and a static HTML/CSS/JS frontend (`frontend/`, `ai-tutor/`) with no build step, served by that same backend. For full details, troubleshooting, and how the database setup works, see **[docs/setup.md](docs/setup.md)**.
+
+## Prerequisites
+
+- Node.js >= 18 and npm
+- PostgreSQL (any recent version) — for your own local `users` table
+- Python 3.11 — only needed if you plan to run the stock-price sync script yourself, not to run the app
+
+## Quick start
+
+```bash
+git clone https://github.com/AlphaQuantMarkets/DemoDashboard.git
+cd DemoDashboard/backend
+npm install
+cp .env.example .env
+```
+
+Edit `backend/.env` and set `DATABASE_URL`, `JWT_SECRET`, and `GEMINI_API_KEY` (see `.env.example` for what each one does).
+
+Create the `users` table once in your Postgres database:
+```sql
+CREATE TABLE IF NOT EXISTS users (
+    id serial PRIMARY KEY,
+    username text UNIQUE NOT NULL,
+    password text NOT NULL,
+    is_premium boolean NOT NULL DEFAULT false
+);
+```
+
+Start the backend (this also serves the frontend):
+```bash
+npm run dev
+```
+
+Open the app: **http://localhost:3000/frontend/index.html**
+
+Check it's healthy: `curl http://localhost:3000/api/health`
+
+See [docs/setup.md](docs/setup.md) for environment variable reference, the database architecture (two separate databases are involved), API testing examples, and troubleshooting.

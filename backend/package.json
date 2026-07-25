@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "description": "> **AI-powered Stock Risk Analysis & Investment Learning Platform**",
   "main": "index.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node server.js",
+    "dev": "nodemon server.js",
     "update-data": "node update-data.js",
-    "dev": "nodemon update-data.js",
+    "update-data:watch": "nodemon update-data.js",
     "migrate:passwords": "node migrations/0000-rehash-existing-passwords.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
