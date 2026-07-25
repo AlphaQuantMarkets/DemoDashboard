@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import math
 from datetime import date
 from pathlib import Path
 
@@ -48,15 +47,12 @@ def fetch_prices(market: Market, symbol: str) -> list[dict]:
     records: list[dict] = []
     for row in history.loc[:, ["time", "open", "high", "low", "close", "volume"]].itertuples(index=False):
         trading_date, open_price, high_price, low_price, close_price, volume = row
-        values = (open_price, high_price, low_price, close_price, volume)
-        if any(value is None or (isinstance(value, float) and math.isnan(value)) for value in values):
+        if any(value is None for value in (open_price, high_price, low_price, close_price, volume)):
             continue
-        if hasattr(trading_date, "date"):
-            trading_date = trading_date.date()
         records.append(
             {
                 "symbol": symbol,
-                "trading_date": trading_date.isoformat(),
+                "trading_date": trading_date.date().isoformat(),
                 "open": float(open_price),
                 "high": float(high_price),
                 "low": float(low_price),

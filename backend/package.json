@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/AlphaQuantMarkets/DemoDashboard#readme",
   "dependencies": {
+    "@google/genai": "^2.13.0",
     "@supabase/supabase-js": "^2.39.0",
     "axios": "^1.6.0",
     "bcrypt": "^6.0.0",

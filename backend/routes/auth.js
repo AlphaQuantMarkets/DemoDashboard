@@ -2,6 +2,16 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 
+router.use((req, res, next) => {
+    if (!process.env.DATABASE_URL) {
+        return res.status(503).json({
+            error: "DATABASE_URL is not configured"
+        });
+    }
+
+    next();
+});
+
 router.post("/signup", async (req, res) => {
 
     console.log("===== SIGNUP REQUEST =====");

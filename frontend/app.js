@@ -24,6 +24,29 @@ function charSum(s) { return [...s].reduce((a, c) => a + c.charCodeAt(0), 0); }
 /* ═══════════════════════════════════════════════════════════════════════
    2. DATA GENERATION
    ═══════════════════════════════════════════════════════════════════════ */
+function generateStockData(ticker, days = 365) {
+  const seed = 42 + charSum(ticker);
+  const rng  = new SeededRandom(seed);
+  const end  = new Date();
+  const dates = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(end); d.setDate(d.getDate() - i); dates.push(d);
+  }
+  const startPrice = rng.uniform(20, 120);
+  const returns    = Array.from({ length: days }, () => rng.normal(0.0003, 0.018));
+  const prices = [];
+  let cumProd = 1;
+  for (const r of returns) { cumProd *= (1 + r); prices.push(startPrice * cumProd); }
+  const highs   = prices.map(p => p * rng.uniform(1.005, 1.025));
+  const lows    = prices.map(p => p * rng.uniform(0.975, 0.995));
+  const opens   = prices.map(p => p * rng.uniform(0.990, 1.010));
+  const volumes = Array.from({ length: days }, () => rng.randInt(500_000, 5_000_000));
+  return dates.map((date, i) => ({
+    date, open: opens[i], high: highs[i], low: lows[i],
+    close: prices[i], volume: volumes[i]
+  }));
+}
+
 async function loadStockData(tickers) {
   console.log("📥 Loading real data from Supabase for tickers:", tickers);
   
@@ -51,7 +74,7 @@ async function loadStockData(tickers) {
       if (!data || data.length === 0) {
         if (from === 0) {
           console.warn('⚠️ No data found for symbols:', tickers);
-          console.warn('Make sure to run: python backend/update_stock.py');
+          console.warn('Make sure to run: python backend/fetch_stock_data.py');
         }
         break;
       }
@@ -130,6 +153,133 @@ function computeMetrics(rows) {
 /* ═══════════════════════════════════════════════════════════════════════
    3. STATE
    ═══════════════════════════════════════════════════════════════════════ */
+function initGuideOverlay() {
+
+  // Nếu guide metrics đã chạy xong thì không chạy lại
+  if (window.__metricsGuideFinished) return;
+
+}
+
+let _chatGuideShown = false;
+function initChatbotGuide() {
+  if (_chatGuideShown) return;
+  _chatGuideShown = true;
+  const fab = document.getElementById('chatFab');
+  if (!fab) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'chatGuideOverlay';
+  overlay.className = 'stock-guide-overlay';
+  overlay.innerHTML = `
+    <div id="chatGuideSpotlight" class="stock-guide-spotlight"></div>
+    <div id="chatGuideTooltip" class="stock-guide-tooltip chat-guide-tooltip">
+      <div class="chat-guide-arrow"></div>
+      <div class="stock-guide-badge" style="color:#7ec8e3;">🤖 Trợ lý AI của bạn</div>
+      <p class="stock-guide-desc">Đây là <strong>AlphaQuant AI</strong> — trợ lý giúp bạn hiểu các chỉ số, thuật ngữ và phân tích rủi ro chứng khoán dễ dàng hơn.</p>
+      <p class="stock-guide-hint">Nhấn vào icon để thử ngay · ESC để bỏ qua</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const spotlight = overlay.querySelector('#chatGuideSpotlight');
+  const tooltip   = overlay.querySelector('#chatGuideTooltip');
+
+  function positionElements() {
+    const r  = fab.getBoundingClientRect();
+    const pad = 18;
+    const cx  = r.left + r.width  / 2;
+    const cy  = r.top  + r.height / 2;
+
+    // Spotlight tròn — tâm trùng FAB, pad đều 4 phía
+    const size = Math.max(r.width, r.height) + pad * 2;
+    spotlight.style.width        = size + 'px';
+    spotlight.style.height       = size + 'px';
+    spotlight.style.left         = (cx - size / 2) + 'px';
+    spotlight.style.top          = (cy - size / 2) + 'px';
+    spotlight.style.borderRadius = '50%';
+    spotlight.style.borderColor  = '#7ec8e3';
+    spotlight.style.boxShadow    = '0 0 0 9999px rgba(6,11,20,0.85), 0 0 0 3px #7ec8e380';
+
+    // Tooltip — đo thực tế chiều cao sau khi render
+    const tooltipW = 230;
+    tooltip.style.width     = tooltipW + 'px';
+    tooltip.style.left      = '-9999px'; // render ngoài màn để đo
+    tooltip.style.top       = '-9999px';
+    tooltip.style.visibility = 'hidden';
+
+
+    // Dùng requestAnimationFrame để đo sau khi browser layout
+    requestAnimationFrame(() => {
+      const tooltipH = tooltip.offsetHeight;
+      let tLeft = r.left - tooltipW - 20;
+      let tTop  = cy - tooltipH / 2;
+      const arrow = tooltip.querySelector('.chat-guide-arrow');
+
+      if (tLeft < 10) {
+        // Không đủ chỗ bên trái → đặt tooltip phía TRÊN FAB
+        tLeft = Math.max(10, Math.min(r.right - tooltipW, window.innerWidth - tooltipW - 10));
+        tTop  = Math.max(10, r.top - tooltipH - 16);
+
+        // Đổi mũi tên trỏ XUỐNG (dưới tooltip)
+        if (arrow) {
+          arrow.style.top         = 'auto';
+          arrow.style.bottom      = '-9px';
+          arrow.style.right       = 'auto';
+          arrow.style.left        = (r.left + r.width / 2 - tLeft - 9) + 'px';
+          arrow.style.transform   = 'none';
+          arrow.style.borderLeft  = '9px solid transparent';
+          arrow.style.borderRight = '9px solid transparent';
+          arrow.style.borderTop   = '10px solid #7ec8e355';
+          arrow.style.borderBottom = 'none';
+        }
+      } else {
+        // Đủ chỗ bên trái → layout mặc định, mũi tên trỏ sang phải
+        tLeft = Math.max(10, tLeft);
+        tTop  = Math.max(10, Math.min(tTop, window.innerHeight - tooltipH - 54));
+        if (arrow) {
+          arrow.style.top         = Math.max(16, cy - tTop - 8) + 'px';
+          arrow.style.bottom      = 'auto';
+          arrow.style.right       = '-10px';
+          arrow.style.left        = 'auto';
+          arrow.style.transform   = 'translateY(-50%)';
+          arrow.style.borderLeft  = '10px solid #7ec8e355';
+          arrow.style.borderRight = 'none';
+          arrow.style.borderTop   = '8px solid transparent';
+          arrow.style.borderBottom = '8px solid transparent';
+        }
+      }
+
+      tooltip.style.left       = tLeft + 'px';
+      tooltip.style.top        = tTop  + 'px';
+      tooltip.style.visibility = 'visible';
+    });
+  }
+
+  // Scroll về đầu trang trước khi lock
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  positionElements();
+  window.addEventListener('resize', positionElements);
+  document.body.style.overflow = 'hidden';
+
+  function close() {
+    overlay.classList.add('hidden');
+    window.removeEventListener('resize', positionElements);
+    document.body.style.overflow = '';
+  }
+
+  overlay.style.pointerEvents = 'auto';
+  spotlight.style.pointerEvents = 'auto';
+  spotlight.style.cursor = 'pointer';
+  spotlight.addEventListener('click', () => { close(); fab.click(); });
+
+  overlay.addEventListener('click', e => {
+    if (!spotlight.contains(e.target) && !tooltip.contains(e.target)) close();
+  });
+
+  document.addEventListener('keydown', function onEsc(e) {
+    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); }
+  });
+}
 
 function initMetricsGuide() {
   if (window.__metricsGuideFinished) return;
@@ -396,6 +546,26 @@ const STATE = {
   },
 };
 
+const TUTOR_STOCK_CONTEXT_KEY = 'alphaquant_tutor_stock_context_v1';
+
+function syncTutorStockContext(metrics) {
+  const stock = STATE.stocks[STATE.selected];
+  if (!stock || !metrics) return;
+
+  const stockContext = {
+    symbol: STATE.selected,
+    companyName: stock.name,
+    currentPrice: Number(metrics.current.toFixed(2)),
+    beta: Number(metrics.beta.toFixed(2)),
+    volatility: Number((metrics.volAnn * 100).toFixed(2)),
+    sharpe: Number(metrics.sharpe.toFixed(2)),
+    maxDrawdown: Number((metrics.maxDD * 100).toFixed(2)),
+    riskLevel: metrics.riskLevel
+  };
+
+  localStorage.setItem(TUTOR_STOCK_CONTEXT_KEY, JSON.stringify(stockContext));
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════════
    5. SEARCH BAR
@@ -549,20 +719,39 @@ function resizeCharts(ids) {
    9. TABS
    ═══════════════════════════════════════════════════════════════════════ */
 function initTabs() {
+  function activateTab(tabId) {
+    const button = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    if (!button) return;
+
+    document.querySelectorAll('.tab-btn').forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+    button.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+
+    if (tabId === 'tab6') {
+      requestAnimationFrame(() => {
+        renderReplay();
+        resizeCharts(['simChartCandle', 'simChartVolume', 'simChartLine']);
+      });
+    }
+  }
+
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById(btn.dataset.tab).classList.add('active');
-      if (btn.dataset.tab === 'tab6') {
-        requestAnimationFrame(() => {
-          renderReplay();
-          resizeCharts(['simChartCandle', 'simChartVolume', 'simChartLine']);
-        });
-      }
+      activateTab(btn.dataset.tab);
     });
   });
+
+  document.querySelectorAll('[data-dashboard-tab]').forEach(link => {
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      activateTab(link.dataset.dashboardTab);
+      history.replaceState(null, '', link.getAttribute('href'));
+    });
+  });
+
+  const tabFromHash = { '#compare': 'tab2', '#risk': 'tab1' }[window.location.hash];
+  if (tabFromHash) activateTab(tabFromHash);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -658,6 +847,7 @@ function render() {
   }
 
   const m    = computeMetrics(slicedRows);
+  syncTutorStockContext(m);
   renderMetrics(m);
   renderRiskBadge(m);
   renderCandlestick(slicedRows);
@@ -993,16 +1183,15 @@ function initProductGuidePanel() {
   panel.className = 'product-guide-panel';
   panel.setAttribute('aria-live', 'polite');
   panel.innerHTML = `
-    <div class="product-guide-kicker">Gợi ý nhanh · AlphaQuant</div>
-    <div class="product-guide-title"></div>
+    <div class="product-guide-kicker">Tính năng sản phẩm</div>
 
     <div class="product-guide-summary">
-      <strong class="product-guide-content_title">Nói gọn nè</strong>
+      <strong class="product-guide-content_title">Description:</strong>
       <span class="product-guide-summary-text"></span>
     </div>
 
     <div class="product-guide-example">
-      <strong class="product-guide-content_title">Thử hình dung</strong>
+      <strong class="product-guide-content_title">Example:</strong>
       <span class="product-guide-example-text"></span>
     </div>
   `;
@@ -1013,38 +1202,8 @@ function initProductGuidePanel() {
   let hideTimer = null;
 
 
-  const titleEl   = panel.querySelector('.product-guide-title');
   const summaryEl = panel.querySelector('.product-guide-summary-text');
   const exampleEl = panel.querySelector('.product-guide-example-text');
-
-  function positionPanel(target) {
-    const rect = target.getBoundingClientRect();
-    const gap = 14;
-    const panelWidth = Math.min(300, window.innerWidth - 24);
-    const panelHeight = panel.offsetHeight || 210;
-    const rightSpace = window.innerWidth - rect.right - gap;
-    const leftSpace = rect.left - gap;
-    let left;
-    let top;
-
-    if (rightSpace >= panelWidth) {
-      left = rect.right + gap;
-      top = rect.top + rect.height / 2 - panelHeight / 2;
-    } else if (leftSpace >= panelWidth) {
-      left = rect.left - panelWidth - gap;
-      top = rect.top + rect.height / 2 - panelHeight / 2;
-    } else if (window.innerHeight - rect.bottom >= panelHeight + gap) {
-      left = rect.left + rect.width / 2 - panelWidth / 2;
-      top = rect.bottom + gap;
-    } else {
-      left = rect.left + rect.width / 2 - panelWidth / 2;
-      top = rect.top - panelHeight - gap;
-    }
-
-    panel.style.width = `${panelWidth}px`;
-    panel.style.left = `${Math.max(12, Math.min(left, window.innerWidth - panelWidth - 12))}px`;
-    panel.style.top = `${Math.max(12, Math.min(top, window.innerHeight - panelHeight - 12))}px`;
-  }
 
   function findGuideTarget(node) {
     if (!node || node === document || node === window) return null;
@@ -1060,16 +1219,10 @@ function initProductGuidePanel() {
     activeGuide = guide;
     activeTarget = target;
 
-    titleEl.textContent = guide.title || '';
     summaryEl.textContent = guide.summary || guide.how || '';
     exampleEl.textContent = guide.example || '';
 
-    panel.classList.add('measuring');
     panel.classList.add('visible');
-    requestAnimationFrame(() => {
-      panel.classList.remove('measuring');
-      positionPanel(target);
-    });
   }
 
   function hideGuide() {
@@ -1102,10 +1255,6 @@ function initProductGuidePanel() {
   document.addEventListener('focusout', e => {
     if (activeTarget && activeTarget.contains(e.target)) hideGuide();
   });
-
-  window.addEventListener('resize', () => {
-    if (activeTarget) positionPanel(activeTarget);
-  });
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1121,7 +1270,7 @@ async function init() {
   await loadProductGuides();
 
   // ========== REAL DATA FROM SUPABASE ==========
-  const tickers = Object.keys(STATE.stocks);
+  const tickers = ['FPT', 'HPG', 'VNM']; // Only 3 symbols
   console.log('🔄 Initializing with real data from Supabase...');
 
   try {
@@ -1210,10 +1359,26 @@ window.addEventListener('DOMContentLoaded', init);
   const tooltip = document.getElementById('chatTooltip');
   const tooltipClose = document.getElementById('chatTooltipClose');
   const hideTooltip = () => tooltip?.classList.add('hidden');
+  const showTooltip = () => {
+    tooltip?.classList.remove('hidden');
+    setTimeout(hideTooltip, 7000);
+  };
 
   hideTooltip(); // ẩn từ đầu, chờ guide đóng mới hiện
   tooltipClose?.addEventListener('click', hideTooltip);
   fab.addEventListener('click', hideTooltip);
+
+  // Expose để initGuideOverlay gọi sau khi đóng guide
+  window._showChatTooltip = showTooltip;
+
+  // history gửi lên API (không gồm system prompt)
+  const history = [];
+
+  const SYSTEM = `Bạn là AlphaQuant AI — trợ lý phân tích rủi ro chứng khoán Việt Nam.
+Trả lời ngắn gọn, rõ ràng, bằng tiếng Việt (hoặc tiếng Anh nếu người dùng hỏi tiếng Anh).
+Chỉ tư vấn thông tin tham khảo, không phải khuyến nghị đầu tư chính thức.
+Các cổ phiếu có trong hệ thống: VNM (Vinamilk), VIC (Vingroup), HPG (Hòa Phát), FPT (FPT Corp), MWG (Mobile World), VHM (Vinhomes).
+Các chỉ số hỗ trợ: Volatility, Sharpe Ratio, Beta, Max Drawdown, Rolling Volatility.`;
 
   /* Toggle cửa sổ */
   fab.addEventListener('click', () => {
@@ -1238,6 +1403,43 @@ window.addEventListener('DOMContentLoaded', init);
 
   /* Gọi Anthropic API */
 
+/* Comment  để lúc sau call API cũng được
+  async function askAI(userText) {
+    history.push({ role: 'user', content: userText });
+
+    const typingBubble = appendMsg('ai', 'Đang soạn tin nhắn...', true);
+    sendBtn.disabled = true;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: SYSTEM,
+          messages: history,
+        }),
+      });
+
+      const data = await res.json();
+      const reply = data?.content?.[0]?.text ?? 'Xin lỗi, không nhận được phản hồi.';
+
+      typingBubble.remove();
+      appendMsg('ai', reply);
+      history.push({ role: 'assistant', content: reply });
+
+    } catch (err) {
+      typingBubble.remove();
+      appendMsg('ai', '⚠️ Lỗi kết nối. Vui lòng thử lại.');
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+*/
+
 const FAKE_RESPONSES = [
     // Lượt 1 — ATO
     `Mình lấy ví dụ cho bạn dễ hình dung nhé! ATO giống như bạn đứng xếp hàng trước cửa store Apple vào ngày mở bán iPhone mới ấy. Thay vì mặc cả giá, bạn chỉ việc đưa tiền cho nhân viên và bảo: "Bất kể sáng nay cửa hàng mở bán giá bao nhiêu, mình chốt luôn một cái, lấy ngay lúc mở cửa!"\n\n📌 <b>ATO (At The Opening)</b>: Là lệnh ưu tiên mua hoặc bán bằng mọi giá ngay khi thị trường vừa "mở mắt" (thường là <b>9h – 9h15 sáng</b>).\n\n• Bạn không cần ghi mức giá cụ thể — cứ ghi <b>"ATO"</b> vào ô mức giá là xong.\n• Nó có <b>quyền ưu tiên cao nhất</b>, kiểu gì cũng được khớp trước mấy người đang ngồi mặc cả từng đồng.`,
@@ -1249,6 +1451,8 @@ const FAKE_RESPONSES = [
   let fakeMsgCount = 0;
 
 async function askAI(userText) {
+    history.push({ role: 'user', content: userText });
+
     sendBtn.disabled = true;
 
     // Tạo bubble AI với span rỗng trước
@@ -1283,6 +1487,7 @@ async function askAI(userText) {
       await new Promise(r => setTimeout(r, token.startsWith('<') ? 0 : 18));
     }
 
+    history.push({ role: 'assistant', content: raw });
     sendBtn.disabled = false;
     input.focus();
   }

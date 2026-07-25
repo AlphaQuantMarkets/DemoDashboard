@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaQuant | AI Investment Tutor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../frontend/style.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="premiumAccess.js" defer></script>
+  <script src="tutorApi.js" defer></script>
+  <script src="tutorPage.js" defer></script>
+</head>
+<body class="bg-bg text-white font-body">
+  <header class="topnav tutor-topnav">
+    <div class="topnav-nav-row">
+      <nav class="topnav-nav" aria-label="Main navigation">
+        <a href="../frontend/index.html" class="topnav-nav-item topnav-nav-home" title="AlphaQuant dashboard">
+          <img src="../frontend/assets/home-button.jpg" alt="AlphaQuant" class="topnav-home-icon" />
+        </a>
+        <a href="../frontend/index.html" class="topnav-nav-item">Dashboard</a>
+        <a href="../frontend/index.html#compare" class="topnav-nav-item">Compare</a>
+        <a href="../frontend/index.html#risk" class="topnav-nav-item">Risk Assessment</a>
+        <a href="./" class="topnav-nav-item tutor-nav-active" aria-current="page">AI Tutor <span>Premium</span></a>
+      </nav>
+      <a href="../frontend/index.html" class="btn-outline tutor-dashboard-link">Back to dashboard</a>
+    </div>
+  </header>
+
+  <main class="tutor-page">
+    <section class="tutor-heading">
+      <div>
+        <p class="tutor-kicker">PREMIUM LEARNING</p>
+        <h1>AI Investment Tutor</h1>
+        <p>Your personal AI tutor for learning and understanding investing.</p>
+      </div>
+      <span id="stockContextLabel" class="tutor-context-label">General investment learning mode</span>
+    </section>
+
+    <section id="premiumGate" class="premium-gate" hidden>
+      <div class="premium-gate__lock" aria-hidden="true">&#128274;</div>
+      <p class="tutor-kicker">PREMIUM FEATURE</p>
+      <h2>AI Investment Tutor is a Premium feature.</h2>
+      <p>Learn investing concepts, understand risk metrics, and explore the context behind the stock you are viewing.</p>
+      <button id="developmentUpgradeButton" type="button" class="btn-solid">Upgrade to Premium</button>
+      <p class="premium-gate__note">Premium subscriptions are not connected yet. On localhost, this button unlocks the development preview.</p>
+    </section>
+
+    <section id="tutorApp" class="tutor-app" hidden>
+      <div class="tutor-suggestions-wrap">
+        <div>
+          <p class="tutor-section-label">SUGGESTED QUESTIONS</p>
+          <p class="tutor-section-copy">Start with a concept, a metric, or the risk of the stock you selected.</p>
+        </div>
+        <div id="tutorSuggestions" class="tutor-suggestions" aria-label="Suggested questions"></div>
+      </div>
+
+      <div id="tutorMessages" class="tutor-messages" aria-live="polite" aria-label="AI Tutor conversation"></div>
+      <div id="tutorError" class="tutor-error" role="alert" hidden></div>
+
+      <form id="tutorForm" class="tutor-input-row">
+        <label class="sr-only" for="tutorInput">Ask the AI Investment Tutor</label>
+        <input id="tutorInput" type="text" placeholder="Ask anything about investing..." autocomplete="off" maxlength="1200" required />
+        <select id="userLevel" aria-label="Your investment experience level">
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+        <button id="tutorSend" type="submit" class="btn-solid">Send</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
