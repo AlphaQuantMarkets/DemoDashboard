@@ -78,34 +78,25 @@ This project uses **two separate Postgres databases**, for two unrelated purpose
 
 Hardcoded to a shared, already-running Supabase project in `frontend/supabase.js` (a publishable/anon key, safe to expose in client-side code). **You don't need to set anything up for this** — opening the dashboard just works, as long as that project is up and you have internet access. This is a shared resource across the whole team, not something each developer creates individually.
 
+Its schema is version-controlled at `backend/migrations/0003-create-stock-prices-table.sql`, but you won't normally need to run it — it's only relevant if you're ever provisioning a brand-new Supabase project from scratch (e.g. a separate staging environment). It's a plain SQL file, not managed by `npm run migrate`, since that table lives on a different Postgres database than `DATABASE_URL` points at; run it manually via the Supabase SQL editor or `psql` against that project's own connection string.
+
 ### 2. `users` — accounts, sessions, premium status (your own Postgres, via `DATABASE_URL`)
 
-You need your own instance of this — a fresh local Postgres install, a Docker container, or your own hosted Postgres (a second Supabase project also works, since Supabase is just Postgres). There is currently **no migration runner** in this project (that's tracked as future work), so the schema is created by hand, once, per environment:
+You need your own instance of this — a fresh local Postgres install, a Docker container, or your own hosted Postgres (a second Supabase project also works, since Supabase is just Postgres). Schema migrations are managed by [`node-pg-migrate`](https://www.npmjs.com/package/node-pg-migrate), configured in `backend/run-migrations.js`. Once `DATABASE_URL` is set in `backend/.env`, create the schema with:
 
-```sql
-CREATE TABLE IF NOT EXISTS users (
-    id serial PRIMARY KEY,
-    username text UNIQUE NOT NULL,
-    password text NOT NULL,
-    is_premium boolean NOT NULL DEFAULT false,
-    email text UNIQUE,
-    phone_number text,
-    gender text CHECK (gender IN ('male', 'female', 'other', 'prefer_not_to_say')),
-    is_email_verified boolean NOT NULL DEFAULT true,
-    email_verification_token_hash text,
-    email_verification_expires_at timestamptz
-);
-```
-
-Note: `is_email_verified` defaults to `true` at the table level — that's intentional (see the migration comment below), not a mistake. New signups explicitly set it to `false` at the application layer (`backend/routes/auth.js`) until the user clicks their verification link.
-
-If you already have a `users` table from before one of these columns existed, add what's missing instead of recreating the table:
 ```bash
-psql -d <your-database> -f backend/migrations/0001-add-users-is-premium.sql
-psql -d <your-database> -f backend/migrations/0002-add-user-registration-fields.sql
+cd backend && npm run migrate
 ```
 
-There's also `backend/migrations/0000-rehash-existing-passwords.js`, a one-time script that hashes any leftover plaintext passwords from before bcrypt was introduced. Irrelevant for a brand-new database — only run it if you're migrating an older one:
+This runs everything in `backend/db-migrations/` against `DATABASE_URL` and produces the full current `users` table (`id`, `username`, `password`, `is_premium`, `email`, `phone_number`, `gender`, `is_email_verified`, `email_verification_token_hash`, `email_verification_expires_at`) from scratch — no manual `CREATE TABLE` step needed for a fresh database.
+
+Note: `is_email_verified` defaults to `true` at the table level — that's intentional (see the migration file's own comment), not a mistake. New signups explicitly set it to `false` at the application layer (`backend/routes/auth.js`) until the user clicks their verification link.
+
+`npm run migrate` is also safe to run against a database that already has **all** of these columns (e.g. yours, if you already ran the older ad-hoc scripts below before this migration runner existed) — verified directly: it detects the table already exists, safely no-ops, and starts tracking it in node-pg-migrate's own `pgmigrations` table for future runs, with no data loss.
+
+It is **not** a fix for a *partially*-migrated database (e.g. one that only ever got `0001-add-users-is-premium.sql` and is missing the newer registration columns) — `CREATE TABLE IF NOT EXISTS` skips entirely once the table exists at all, it does not backfill missing columns. For a partially-migrated database, run whichever of the specific `backend/migrations/000N-*` files below are still missing first, then `npm run migrate` will correctly recognize the now-complete schema.
+
+The older, hand-written `backend/migrations/0000-rehash-existing-passwords.js`, `0001-add-users-is-premium.sql`, and `0002-add-user-registration-fields.sql` are now superseded by `npm run migrate` for standing up a *new* environment — they're kept only for historical reference and for anyone still catching up an older, partially-migrated database column-by-column outside the migration runner (see above). `0000-rehash-existing-passwords.js` remains independently relevant any time you're migrating an older database that might have leftover plaintext passwords:
 ```bash
 cd backend && npm run migrate:passwords
 ```
@@ -133,7 +124,7 @@ UPDATE users SET email_verification_expires_at = now() - interval '1 day' WHERE 
 
 ### Do testers need to manually create anything?
 
-Yes — the `users` table (above), and their own `backend/.env` with a valid `DATABASE_URL`. Everything else (stock data) is already live and shared.
+Their own `backend/.env` with a valid `DATABASE_URL`, pointed at a Postgres database they control — then `npm run migrate` creates the `users` table automatically. Everything else (stock data) is already live and shared, no setup needed.
 
 ## E. Running the backend
 

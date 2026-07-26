@@ -331,14 +331,9 @@ cp .env.example .env
 
 Edit `backend/.env` and set `DATABASE_URL`, `JWT_SECRET`, and `GEMINI_API_KEY` (see `.env.example` for what each one does).
 
-Create the `users` table once in your Postgres database:
-```sql
-CREATE TABLE IF NOT EXISTS users (
-    id serial PRIMARY KEY,
-    username text UNIQUE NOT NULL,
-    password text NOT NULL,
-    is_premium boolean NOT NULL DEFAULT false
-);
+Create the `users` table:
+```bash
+npm run migrate
 ```
 
 Start the backend (this also serves the frontend):

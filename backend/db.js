@@ -1,3 +1,5 @@
+// Schema source of truth for this database (the users table) lives in
+// backend/db-migrations/, run via `npm run migrate` (see run-migrations.js).
 const { Pool } = require("pg");
 
 if (!process.env.DATABASE_URL) {
