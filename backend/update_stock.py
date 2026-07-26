@@ -12,6 +12,7 @@ from vnstock import Market
 
 
 SYMBOLS = ("VNM", "VIC", "HPG", "FPT", "MWG", "VHM", "TCB", "MBB")
+BENCHMARK_INDEX = "VNINDEX"
 HISTORY_START = "2023-01-01"
 UPSERT_BATCH_SIZE = 500
 
@@ -29,7 +30,8 @@ def get_supabase_client() -> Client:
     return create_client(url, service_key)
 
 def fetch_prices(market: Market, symbol: str) -> list[dict]:
-    history = market.equity(symbol).ohlcv(
+    quote = market.index(symbol) if symbol == BENCHMARK_INDEX else market.equity(symbol)
+    history = quote.ohlcv(
         start=HISTORY_START,
         end=date.today().isoformat(),
         interval="1D",
@@ -93,7 +95,7 @@ def main() -> None:
     client = get_supabase_client()
     market = Market()
 
-    for symbol in SYMBOLS:
+    for symbol in (*SYMBOLS, BENCHMARK_INDEX):
         print(f"📥 Fetching {symbol}...")
         records = fetch_prices(market, symbol)
         

@@ -124,7 +124,39 @@ async function loadStockData(tickers) {
     throw error;
   }
 }
-function computeMetrics(rows) {
+function computeBeta(rows, benchmarkRows) {
+  if (!benchmarkRows || benchmarkRows.length < 2 || rows.length < 2) return null;
+
+  const benchCloseByDate = new Map(benchmarkRows.map(r => [r.date.getTime(), r.close]));
+
+  const stockReturns = [];
+  const benchReturns = [];
+  for (let i = 1; i < rows.length; i++) {
+    const prevBenchClose = benchCloseByDate.get(rows[i - 1].date.getTime());
+    const currBenchClose = benchCloseByDate.get(rows[i].date.getTime());
+    if (prevBenchClose == null || currBenchClose == null) continue;
+
+    stockReturns.push((rows[i].close - rows[i - 1].close) / rows[i - 1].close);
+    benchReturns.push((currBenchClose - prevBenchClose) / prevBenchClose);
+  }
+
+  if (stockReturns.length < 2) return null;
+
+  const stockMean = stockReturns.reduce((a, v) => a + v, 0) / stockReturns.length;
+  const benchMean = benchReturns.reduce((a, v) => a + v, 0) / benchReturns.length;
+
+  let covariance = 0, benchVariance = 0;
+  for (let i = 0; i < stockReturns.length; i++) {
+    covariance    += (stockReturns[i] - stockMean) * (benchReturns[i] - benchMean);
+    benchVariance += (benchReturns[i] - benchMean) ** 2;
+  }
+  covariance    /= stockReturns.length;
+  benchVariance /= stockReturns.length;
+
+  return benchVariance > 0 ? covariance / benchVariance : null;
+}
+
+function computeMetrics(rows, benchmarkRows) {
   const closes  = rows.map(r => r.close);
   const rets    = closes.slice(1).map((c, i) => (c - closes[i]) / closes[i]);
   const mean    = rets.length ? rets.reduce((a, v) => a + v, 0) / rets.length : 0;
@@ -132,8 +164,7 @@ function computeMetrics(rows) {
   const std     = Math.sqrt(variance);
   const volAnn  = std * Math.sqrt(252);
   const sharpe  = (mean * 252) / (std * Math.sqrt(252) + 1e-9);
-  const betaRng = new SeededRandom(charSum(rows[0]?.date?.toString() ?? '0'));
-  const beta    = betaRng.uniform(0.6, 1.6);
+  const beta    = computeBeta(rows, benchmarkRows);
   let cumMax = closes[0], maxDD = 0;
   for (const c of closes) {
     if (c > cumMax) cumMax = c;
@@ -556,7 +587,7 @@ function syncTutorStockContext(metrics) {
     symbol: STATE.selected,
     companyName: stock.name,
     currentPrice: Number(metrics.current.toFixed(2)),
-    beta: Number(metrics.beta.toFixed(2)),
+    beta: metrics.beta != null ? Number(metrics.beta.toFixed(2)) : null,
     volatility: Number((metrics.volAnn * 100).toFixed(2)),
     sharpe: Number(metrics.sharpe.toFixed(2)),
     maxDrawdown: Number((metrics.maxDD * 100).toFixed(2)),
@@ -623,7 +654,7 @@ function renderWatchlist() {
     }
 
     const rows = STATE.allData[ticker];
-    const m    = computeMetrics(rows.slice(-30));
+    const m    = computeMetrics(rows.slice(-30), STATE.allData.VNINDEX);
     const price = rows[rows.length - 1].close.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     const up    = m.changePct >= 0;
 
@@ -788,7 +819,7 @@ function renderAIAnalysis() {
 
   const ticker = select.value;
   const info = STATE.stocks[ticker];
-  const metrics = computeMetrics(STATE.allData[ticker].slice(-STATE.period));
+  const metrics = computeMetrics(STATE.allData[ticker].slice(-STATE.period), STATE.allData.VNINDEX);
   const volPct = metrics.volAnn * 100;
   const ddPct = Math.abs(metrics.maxDD * 100);
   const riskScore = Math.min(99, Math.max(1, Math.round(volPct * 1.25 + ddPct * 0.9 + metrics.beta * 12)));
@@ -802,7 +833,8 @@ function renderAIAnalysis() {
   setText('aiResultTitle', `${ticker} — ${info.name}`);
   setText('aiRiskScore', riskScore);
   setText('aiRiskHeadline', `Mức rủi ro mô phỏng: ${tone.toUpperCase()}`);
-  setText('aiRiskSummary', `AI demo đánh giá ${ticker} có rủi ro ${tone} trong khung ${STATE.period} ngày. Với volatility ${volPct.toFixed(1)}%, beta ${metrics.beta.toFixed(2)} và drawdown tối đa ${(metrics.maxDD * 100).toFixed(1)}%, mã này ${action}`);
+  const betaText = metrics.beta != null ? metrics.beta.toFixed(2) : '—';
+  setText('aiRiskSummary', `AI demo đánh giá ${ticker} có rủi ro ${tone} trong khung ${STATE.period} ngày. Với volatility ${volPct.toFixed(1)}%, beta ${betaText} và drawdown tối đa ${(metrics.maxDD * 100).toFixed(1)}%, mã này ${action}`);
 
   setText('aiVolValue', `${volPct.toFixed(1)}%`);
   setText('aiVolText', volPct > 40 ? 'Biến động cao, cần giới hạn tỷ trọng và đặt ngưỡng cắt lỗ rõ.' : volPct > 20 ? 'Biến động ở mức vừa, phù hợp theo dõi cùng xu hướng giá.' : 'Biến động thấp, phù hợp khẩu vị thận trọng hơn.');
@@ -846,7 +878,7 @@ function render() {
     return;
   }
 
-  const m    = computeMetrics(slicedRows);
+  const m    = computeMetrics(slicedRows, STATE.allData.VNINDEX);
   syncTutorStockContext(m);
   renderMetrics(m);
   renderRiskBadge(m);
@@ -1059,7 +1091,7 @@ function renderReplay() {
   }
   if (label) label.textContent = `Day ${STATE.replay.day} / ${maxDay}`;
 
-  const m = computeMetrics(rows);
+  const m = computeMetrics(rows, STATE.allData.VNINDEX);
   renderMetrics(m, 'sim', {
     volSub: 'Annualized',
     sharpeSub: 'Replay realtime',
@@ -1110,7 +1142,7 @@ function renderComparison() {
   body.innerHTML = '';
   const rowData = [];
   for (const t of tickers) {
-    const m = computeMetrics(STATE.allData[t].slice(-STATE.period));
+    const m = computeMetrics(STATE.allData[t].slice(-STATE.period), STATE.allData.VNINDEX);
     rowData.push({ t, m });
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -1119,7 +1151,7 @@ function renderComparison() {
       <td>${m.current.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
       <td>${(m.volAnn * 100).toFixed(1)}%</td>
       <td>${m.sharpe.toFixed(2)}</td>
-      <td>${m.beta.toFixed(2)}</td>
+      <td>${m.beta != null ? m.beta.toFixed(2) : '—'}</td>
       <td style="color:var(--red)">${(m.maxDD * 100).toFixed(1)}%</td>
       <td><span class="risk-badge risk-${m.riskClass}" style="font-size:.68rem;padding:2px 8px">${m.riskLevel}</span></td>
     `;
@@ -1270,7 +1302,7 @@ async function init() {
   await loadProductGuides();
 
   // ========== REAL DATA FROM SUPABASE ==========
-  const tickers = ['FPT', 'HPG', 'VNM']; // Only 3 symbols
+  const tickers = ['FPT', 'HPG', 'VNM', 'VNINDEX']; // Only 3 symbols, plus the VN-Index benchmark used for Beta
   console.log('🔄 Initializing with real data from Supabase...');
 
   try {
