@@ -1,52 +1,5 @@
 /* ─── ALPHAQUANT · app.js ────────────────────────────────────────────── */
 
-/* ═══════════════════════════════════════════════════════════════════════
-   1. SEEDED PRNG
-   ═══════════════════════════════════════════════════════════════════════ */
-class SeededRandom {
-  constructor(seed) { this.state = seed >>> 0; }
-  next() {
-    this.state = (Math.imul(1664525, this.state) + 1013904223) >>> 0;
-    return this.state / 4294967296;
-  }
-  normal(mean = 0, std = 1) {
-    const u1 = Math.max(1e-10, this.next());
-    const u2 = this.next();
-    const z  = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-    return mean + std * z;
-  }
-  uniform(lo, hi) { return lo + this.next() * (hi - lo); }
-  randInt(lo, hi)  { return Math.floor(lo + this.next() * (hi - lo)); }
-}
-
-function charSum(s) { return [...s].reduce((a, c) => a + c.charCodeAt(0), 0); }
-
-/* ═══════════════════════════════════════════════════════════════════════
-   2. DATA GENERATION
-   ═══════════════════════════════════════════════════════════════════════ */
-function generateStockData(ticker, days = 365) {
-  const seed = 42 + charSum(ticker);
-  const rng  = new SeededRandom(seed);
-  const end  = new Date();
-  const dates = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(end); d.setDate(d.getDate() - i); dates.push(d);
-  }
-  const startPrice = rng.uniform(20, 120);
-  const returns    = Array.from({ length: days }, () => rng.normal(0.0003, 0.018));
-  const prices = [];
-  let cumProd = 1;
-  for (const r of returns) { cumProd *= (1 + r); prices.push(startPrice * cumProd); }
-  const highs   = prices.map(p => p * rng.uniform(1.005, 1.025));
-  const lows    = prices.map(p => p * rng.uniform(0.975, 0.995));
-  const opens   = prices.map(p => p * rng.uniform(0.990, 1.010));
-  const volumes = Array.from({ length: days }, () => rng.randInt(500_000, 5_000_000));
-  return dates.map((date, i) => ({
-    date, open: opens[i], high: highs[i], low: lows[i],
-    close: prices[i], volume: volumes[i]
-  }));
-}
-
 const STOCKS_API_BASE_URL = ['localhost', '127.0.0.1'].includes(window.location.hostname)
   ? `${window.location.protocol}//${window.location.host}`
   : 'https://alphaquant-api-cg7b.onrender.com';
@@ -1327,18 +1280,10 @@ async function init() {
     STATE.allData = realData;
     STATE.selected = STATE.selected || 'FPT'; // Default to FPT
     console.log('✅ Real data loaded successfully');
-    
-    // Clear old fake data cache
-    try {
-      localStorage.removeItem('fakeStockCache');
-      sessionStorage.clear();
-    } catch (e) {
-      console.warn('Could not clear old cache');
-    }
-    
+
   } catch (error) {
-    console.error('❌ Failed to load real data from Supabase:', error.message);
-    alert('⚠️ Không thể kết nối Supabase.\n\nVui lòng kiểm tra:\n1. Internet connection\n2. Supabase API keys\n3. Database has stock_prices data\n\nError: ' + error.message);
+    console.error('❌ Failed to load real data from the backend API:', error.message);
+    alert('⚠️ Không thể tải dữ liệu cổ phiếu.\n\nVui lòng kiểm tra:\n1. Internet connection\n2. Backend server đang chạy\n3. Database has stock_prices data\n\nError: ' + error.message);
     return; // Stop init if data fails
   }
   // ========================================
@@ -1443,44 +1388,6 @@ Các chỉ số hỗ trợ: Volatility, Sharpe Ratio, Beta, Max Drawdown, Rollin
     return wrap;
   }
 
-  /* Gọi Anthropic API */
-
-/* Comment  để lúc sau call API cũng được
-  async function askAI(userText) {
-    history.push({ role: 'user', content: userText });
-
-    const typingBubble = appendMsg('ai', 'Đang soạn tin nhắn...', true);
-    sendBtn.disabled = true;
-
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: SYSTEM,
-          messages: history,
-        }),
-      });
-
-      const data = await res.json();
-      const reply = data?.content?.[0]?.text ?? 'Xin lỗi, không nhận được phản hồi.';
-
-      typingBubble.remove();
-      appendMsg('ai', reply);
-      history.push({ role: 'assistant', content: reply });
-
-    } catch (err) {
-      typingBubble.remove();
-      appendMsg('ai', '⚠️ Lỗi kết nối. Vui lòng thử lại.');
-    } finally {
-      sendBtn.disabled = false;
-      input.focus();
-    }
-  }
-
-*/
 
 const FAKE_RESPONSES = [
     // Lượt 1 — ATO
