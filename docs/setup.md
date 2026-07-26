@@ -60,8 +60,8 @@ cp backend/.env.example backend/.env
 | `JWT_SECRET` | same routes as `DATABASE_URL` | Secret used to sign and verify JWT session tokens. Without it, those routes return `503`. Generate one locally: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `GEMINI_API_KEY` | `POST /api/ai/tutor` | Google Gemini API key used to generate AI Tutor responses. |
 | `ALLOWED_ORIGINS` | — | Comma-separated list of frontend origins allowed to call this API (CORS allowlist). Optional, defaults to `http://localhost:3000` and `http://127.0.0.1:3000`. |
-| `SUPABASE_URL` | `backend/update-data.js` only | Only needed if running the (rarely-used) Node stock-sync worker. Not needed for the API server. |
-| `SUPABASE_SERVICE_KEY` | `backend/update-data.js` only | Same as above. |
+| `SUPABASE_URL` | `backend/update_stock.py` only | Only needed if running the Python stock-sync script yourself. Not needed for the Node API server. |
+| `SUPABASE_SERVICE_KEY` | `backend/update_stock.py` only | Same as above. |
 
 Notes:
 - `backend/.env` is gitignored — never commit it. Only `backend/.env.example` (blank placeholders) is tracked.
