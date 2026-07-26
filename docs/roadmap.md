@@ -32,6 +32,7 @@
 | [M16](#m16-admin-back-office-mvp) | 5. Platform Growth | Minimal protected admin view (user count, recent signups, health) | M | M2 |
 | [M17](#m17-i18n-scaffolding-pilot) | 5. Platform Growth | Introduce a strings-file/loader pattern, piloted on one surface | M | — |
 | [M18](#m18-subscription-billing-foundation-stripe-scaffold) | 5. Platform Growth | Scaffold a `subscriptions` table and Stripe service stub behind the real premium gate | L | M3, M6 |
+| [M19](#m19-ai-risk-assessment) | 6. New Features | Make the existing "AI Analysis" tab real: genuine Gemini-generated risk explanations on top of deterministic, already-computed risk metrics | M | M7 |
 
 ---
 
@@ -419,6 +420,35 @@ Longer-horizon items from architecture.md §12. These are scoped as **foundation
 - [ ] Hitting `/api/billing/checkout-session` as an authenticated user returns a valid Stripe-hosted checkout URL (test-mode Stripe account).
 - [ ] No webhook handling, payment-status syncing, or frontend checkout UI is claimed as done by this milestone — those are explicitly follow-up work, called out in the PR description.
 - [ ] Existing `is_premium`-based access (from M3) continues to work unchanged for any user who isn't yet in the `subscriptions` table, so this milestone can't regress current tutor access.
+
+---
+
+## Phase 6 — New Features
+
+Unlike Phases 1–5 (all derived from `docs/architecture.md`'s technical-debt findings), this phase covers direct feature requests — additive, not remediation.
+
+### M19: AI Risk Assessment
+
+**Objective:** Turn the existing Tab 5 ("🤖 Phân Tích AI / AI Risk Analysis") from an explicitly-labeled demo (canned Vietnamese sentence templates, no AI call) into a genuine feature: deterministic risk metrics (already computed correctly client-side, per M7) explained in plain Vietnamese by Gemini — never inventing numbers, never giving buy/sell advice.
+
+**Complexity:** M (3–5 days)
+
+**Depends on:** M7 (real Beta calculation — this feature displays and explains it)
+
+**Affected files:**
+- `backend/services/responseValidator.js` (new) — generic heuristic safety filter (`containsDirectiveAdvice`, `sanitizeExplanation`) against directive buy/sell/hold phrasing slipping into a Gemini response. Written generically so M13 (still not implemented) can later reuse it for `/tutor` with a single new call site.
+- `backend/prompts/riskExplanationPrompt.js` (new) — prompt builder mirroring `tutorPrompt.js`'s conventions, explicit "never recalculate or invent numbers" instruction.
+- `backend/routes/ai.js` — new `POST /risk-explanation` route (inline validation, no auth/premium gate — free dashboard tab, inherits the existing global rate limiter). Does not touch the existing `/tutor` route.
+- `frontend/app.js` — `computeMetrics` gains a `trend` field; `renderAIAnalysis()` split into automatic metrics display (Risk Score/Level/5 insight cards, unchanged trigger points) and a new `explainRiskWithAI()` gated behind a button click, with loading/error states.
+- `frontend/riskApi.js` (new) — isolates the fetch call from UI code, mirrors `ai-tutor/tutorApi.js`'s pattern.
+- `frontend/index.html` — Tab 5 markup: removed two dead/unwired controls (risk-appetite selector, analysis-focus checkboxes), repurposed the existing button, dropped "demo" framing from all copy, added Beta/Trend insight cards.
+
+**Acceptance criteria:**
+- [ ] Selecting a stock immediately shows a Risk Score (0–100), a Risk Level (Low/Medium/High), and 5 risk-driver cards (Volatility, Beta, Max Drawdown, Sharpe, recent Trend) — all computed instantly client-side, no AI call involved.
+- [ ] Clicking "Giải thích rủi ro bằng AI" shows a loading state, then a short (<120 words) beginner-friendly Vietnamese explanation of those exact numbers — verified the prompt cannot cause the AI to invent or recalculate a number.
+- [ ] No response ever contains direct buy/sell/hold phrasing — enforced by both the prompt and the code-level `sanitizeExplanation` backstop.
+- [ ] A static, non-AI-generated "what to do next" list (diversify, reduce concentration, learn more, don't concentrate capital) is always shown, independent of whether the AI call succeeds.
+- [ ] Tab 1, Tab 2 (Compare), and the existing chatbot widget are unaffected.
 
 ---
 

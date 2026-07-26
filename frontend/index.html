@@ -32,6 +32,8 @@
   <link rel="stylesheet" href="style.css" />
   <!-- Plotly -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly.min.js" defer></script>
+  <!-- Risk explanation API -->
+  <script src="riskApi.js" defer></script>
   <!-- App logic -->
   <script src="app.js" defer></script>
   <script>window.__loadStart = Date.now();</script>
@@ -456,7 +458,7 @@
       <div class="ai-analysis-layout">
         <aside class="ai-control-panel">
           <div class="section-title">🤖 Phân Tích AI / AI Risk Analysis</div>
-          <p class="ai-panel-note">Demo giao diện phân tích rủi ro bằng AI. Nội dung bên phải là mô phỏng, chưa gọi AI thật.</p>
+          <p class="ai-panel-note">Chọn một mã cổ phiếu để xem đánh giá rủi ro. Nhấn nút bên dưới để AI giải thích các chỉ số bằng ngôn ngữ đơn giản.</p>
 
           <div class="ai-field">
             <label for="aiStockSelect">Mã cổ phiếu</label>
@@ -465,34 +467,16 @@
             </div>
           </div>
 
-          <div class="ai-field">
-            <label>Khẩu vị rủi ro</label>
-            <div class="ai-segmented">
-              <button class="active" type="button">Thận trọng</button>
-              <button type="button">Cân bằng</button>
-              <button type="button">Mạo hiểm</button>
-            </div>
-          </div>
-
-          <div class="ai-field">
-            <label>Góc nhìn phân tích</label>
-            <div class="ai-check-row">
-              <label><input type="checkbox" checked /> Biến động</label>
-              <label><input type="checkbox" checked /> Drawdown</label>
-              <label><input type="checkbox" checked /> Beta</label>
-            </div>
-          </div>
-
-          <button class="ai-run-btn" type="button" id="aiRunBtn">Tạo phân tích demo</button>
+          <button class="ai-run-btn" type="button" id="aiRunBtn">Giải thích rủi ro bằng AI</button>
         </aside>
 
         <section class="ai-result-panel">
           <div class="ai-result-head">
             <div>
-              <span class="ai-kicker">AI DEMO OUTPUT</span>
+              <span class="ai-kicker">AI RISK ASSESSMENT</span>
               <h3 id="aiResultTitle">—</h3>
             </div>
-            <span class="ai-status-pill">Demo mode</span>
+            <span class="ai-status-pill">Dữ liệu thực</span>
           </div>
 
           <div class="ai-summary-card">
@@ -522,14 +506,24 @@
               <strong id="aiDrawdownValue">—</strong>
               <p id="aiDrawdownText">—</p>
             </div>
+            <div class="ai-insight-card">
+              <span>Beta</span>
+              <strong id="aiBetaValue">—</strong>
+              <p id="aiBetaText">—</p>
+            </div>
+            <div class="ai-insight-card">
+              <span>Xu hướng</span>
+              <strong id="aiTrendValue">—</strong>
+              <p id="aiTrendText">—</p>
+            </div>
           </div>
 
           <div class="ai-recommendation">
-            <h4>Kết luận mô phỏng</h4>
+            <h4>Nên làm gì tiếp theo?</h4>
             <ul id="aiRecommendationList"></ul>
           </div>
 
-          <p class="ai-disclaimer">Đây là nội dung demo để minh họa trải nghiệm sản phẩm, không phải khuyến nghị đầu tư.</p>
+          <p class="ai-disclaimer">Nội dung do AI tạo ra mang tính giáo dục, không phải khuyến nghị đầu tư hay lời khuyên mua/bán.</p>
         </section>
       </div>
     </div><!-- /tab5 -->

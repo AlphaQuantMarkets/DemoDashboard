@@ -174,11 +174,13 @@ function computeMetrics(rows, benchmarkRows) {
   const current   = closes.at(-1);
   const prev      = closes.at(-2) ?? current;
   const changePct = ((current - prev) / prev) * 100;
+  const periodChangePct = closes[0] ? ((current - closes[0]) / closes[0]) * 100 : 0;
+  const trend = periodChangePct > 5 ? 'up' : periodChangePct < -5 ? 'down' : 'flat';
   let riskLevel, riskClass;
   if      (volAnn < 0.20) { riskLevel = 'THẤP / LOW';          riskClass = 'low'; }
   else if (volAnn < 0.40) { riskLevel = 'TRUNG BÌNH / MEDIUM'; riskClass = 'medium'; }
   else                    { riskLevel = 'CAO / HIGH';           riskClass = 'high'; }
-  return { volAnn, sharpe, beta, maxDD, current, prev, changePct, riskLevel, riskClass };
+  return { volAnn, sharpe, beta, maxDD, current, prev, changePct, trend, riskLevel, riskClass };
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -575,6 +577,7 @@ const STATE = {
     timer: null,
     speedMs: 500,
   },
+  aiAssessment: null,   // last computeRiskAssessment() result, cached for the "Explain Risk with AI" button
 };
 
 const TUTOR_STOCK_CONTEXT_KEY = 'alphaquant_tutor_stock_context_v1';
@@ -802,15 +805,22 @@ function initAIAnalysis() {
   select.value = STATE.selected;
 
   select.addEventListener('change', renderAIAnalysis);
-  if (runBtn) runBtn.addEventListener('click', renderAIAnalysis);
-  document.querySelectorAll('.ai-segmented button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.ai-segmented button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderAIAnalysis();
-    });
-  });
+  if (runBtn) runBtn.addEventListener('click', explainRiskWithAI);
   renderAIAnalysis();
+}
+
+function computeRiskAssessment(ticker) {
+  const info = STATE.stocks[ticker];
+  const metrics = computeMetrics(STATE.allData[ticker].slice(-STATE.period), STATE.allData.VNINDEX);
+  const volPct = metrics.volAnn * 100;
+  const ddPct = Math.abs(metrics.maxDD * 100);
+  const riskScore = Math.min(99, Math.max(1, Math.round(volPct * 1.25 + ddPct * 0.9 + (metrics.beta ?? 0) * 12)));
+  const riskLevelKey = riskScore >= 70 ? 'high' : riskScore >= 45 ? 'medium' : 'low';
+  const tone = { high: 'cao', medium: 'trung bình', low: 'thấp' }[riskLevelKey];
+  const betaText = metrics.beta != null ? metrics.beta.toFixed(2) : '—';
+  const trendLabel = { up: 'Đang tăng', down: 'Đang giảm', flat: 'Đi ngang' }[metrics.trend] ?? '—';
+
+  return { ticker, info, metrics, volPct, ddPct, riskScore, riskLevelKey, tone, betaText, trendLabel };
 }
 
 function renderAIAnalysis() {
@@ -818,38 +828,72 @@ function renderAIAnalysis() {
   if (!select || !STATE.allData[select.value]) return;
 
   const ticker = select.value;
-  const info = STATE.stocks[ticker];
-  const metrics = computeMetrics(STATE.allData[ticker].slice(-STATE.period), STATE.allData.VNINDEX);
-  const volPct = metrics.volAnn * 100;
-  const ddPct = Math.abs(metrics.maxDD * 100);
-  const riskScore = Math.min(99, Math.max(1, Math.round(volPct * 1.25 + ddPct * 0.9 + metrics.beta * 12)));
-  const tone = riskScore >= 70 ? 'cao' : riskScore >= 45 ? 'trung bình' : 'thấp';
-  const action = riskScore >= 70
-    ? 'nên ưu tiên quản trị vị thế và chờ vùng giá ổn định hơn.'
-    : riskScore >= 45
-      ? 'phù hợp để theo dõi thêm, đặc biệt khi kết hợp với điểm mua rõ ràng.'
-      : 'đang có hồ sơ rủi ro tương đối dễ kiểm soát trong giai đoạn quan sát.';
+  const assessment = computeRiskAssessment(ticker);
+  STATE.aiAssessment = assessment;
+
+  const { info, metrics, volPct, ddPct, riskScore, tone, betaText, trendLabel } = assessment;
 
   setText('aiResultTitle', `${ticker} — ${info.name}`);
   setText('aiRiskScore', riskScore);
-  setText('aiRiskHeadline', `Mức rủi ro mô phỏng: ${tone.toUpperCase()}`);
-  const betaText = metrics.beta != null ? metrics.beta.toFixed(2) : '—';
-  setText('aiRiskSummary', `AI demo đánh giá ${ticker} có rủi ro ${tone} trong khung ${STATE.period} ngày. Với volatility ${volPct.toFixed(1)}%, beta ${betaText} và drawdown tối đa ${(metrics.maxDD * 100).toFixed(1)}%, mã này ${action}`);
+  setText('aiRiskHeadline', `Mức độ rủi ro: ${tone.toUpperCase()}`);
+  setText('aiRiskSummary', 'Nhấn "Giải thích rủi ro bằng AI" để xem giải thích dễ hiểu về các chỉ số bên dưới.');
 
   setText('aiVolValue', `${volPct.toFixed(1)}%`);
   setText('aiVolText', volPct > 40 ? 'Biến động cao, cần giới hạn tỷ trọng và đặt ngưỡng cắt lỗ rõ.' : volPct > 20 ? 'Biến động ở mức vừa, phù hợp theo dõi cùng xu hướng giá.' : 'Biến động thấp, phù hợp khẩu vị thận trọng hơn.');
   setText('aiSharpeValue', metrics.sharpe.toFixed(2));
-  setText('aiSharpeText', metrics.sharpe > 1 ? 'Hiệu suất điều chỉnh rủi ro đang tích cực trong dữ liệu demo.' : 'Hiệu suất chưa thật nổi bật so với mức biến động.');
+  setText('aiSharpeText', metrics.sharpe > 1 ? 'Hiệu suất điều chỉnh rủi ro đang tích cực.' : 'Hiệu suất chưa thật nổi bật so với mức biến động.');
   setText('aiDrawdownValue', `${(metrics.maxDD * 100).toFixed(1)}%`);
   setText('aiDrawdownText', ddPct > 15 ? 'Drawdown sâu, nên kiểm tra vùng hỗ trợ và quản trị lỗ.' : 'Drawdown còn trong vùng dễ kiểm soát hơn.');
+  setText('aiBetaValue', betaText);
+  setText('aiBetaText', metrics.beta != null ? (metrics.beta > 1 ? 'Biến động mạnh hơn thị trường chung.' : 'Biến động ít hơn thị trường chung.') : 'Chưa có đủ dữ liệu so sánh.');
+  setText('aiTrendValue', trendLabel);
+  setText('aiTrendText', metrics.trend === 'up' ? 'Giá đang có xu hướng tăng trong giai đoạn này.' : metrics.trend === 'down' ? 'Giá đang có xu hướng giảm trong giai đoạn này.' : 'Giá tương đối ổn định trong giai đoạn này.');
 
   const list = document.getElementById('aiRecommendationList');
   if (list) {
     list.innerHTML = `
-      <li>Không dùng kết quả demo này như tín hiệu mua bán trực tiếp.</li>
-      <li>Theo dõi thêm xu hướng giá, khối lượng và biến động 20 phiên.</li>
-      <li>Nếu đưa vào danh mục, nên đặt trước tỷ trọng tối đa và điểm thoát rủi ro.</li>
+      <li>Đa dạng hóa danh mục thay vì chỉ giữ một mã cổ phiếu.</li>
+      <li>Giảm tỷ trọng tập trung vào một mã duy nhất.</li>
+      <li>Tìm hiểu thêm kiến thức đầu tư trước khi quyết định.</li>
+      <li>Không nên dồn toàn bộ vốn vào một cổ phiếu duy nhất.</li>
     `;
+  }
+}
+
+async function explainRiskWithAI() {
+  const assessment = STATE.aiAssessment;
+  const btn = document.getElementById('aiRunBtn');
+  if (!assessment || !btn) return;
+
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Đang phân tích...';
+  setText('aiRiskSummary', '🤖 Đang tạo giải thích...');
+
+  try {
+    const { ticker, info, metrics, riskScore, riskLevelKey } = assessment;
+    const explanation = await window.RiskApi.explainRisk({
+      symbol: ticker,
+      companyName: info.name,
+      riskScore,
+      riskLevel: riskLevelKey,
+      metrics: {
+        volPct: Number((metrics.volAnn * 100).toFixed(2)),
+        sharpe: Number(metrics.sharpe.toFixed(2)),
+        maxDDPct: Number((metrics.maxDD * 100).toFixed(2)),
+        beta: metrics.beta != null ? Number(metrics.beta.toFixed(2)) : null,
+        trend: metrics.trend ?? null
+      }
+    });
+
+    setText('aiRiskSummary', explanation);
+
+  } catch (error) {
+    console.error('AI Risk Explanation error:', error);
+    setText('aiRiskSummary', '⚠️ Không thể tạo giải thích AI lúc này. Vui lòng thử lại.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
   }
 }
 
