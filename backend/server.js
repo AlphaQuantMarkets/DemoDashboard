@@ -22,6 +22,14 @@ const apiRateLimiter = rateLimit({
     message: { error: "Too many requests. Please try again later." }
 });
 
+const resendVerificationRateLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many verification emails requested. Please try again later." }
+});
+
 const app = express();
 
 app.use(cors({
@@ -37,6 +45,7 @@ app.use(express.json());
 app.use("/api", apiRateLimiter);
 app.use("/api/ai", aiRoutes);
 
+app.use("/api/auth/resend-verification", resendVerificationRateLimiter);
 app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {

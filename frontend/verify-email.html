@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaQuant | Xác nhận Email</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-bg text-white font-body">
+
+  <header class="topnav">
+    <div class="topnav-nav-row">
+      <nav class="topnav-nav" aria-label="Main navigation">
+        <a href="index.html" class="topnav-nav-item topnav-nav-home" title="AlphaQuant dashboard">
+          <img src="assets/home-button.jpg" alt="AlphaQuant" class="topnav-home-icon" />
+        </a>
+        <a href="index.html" class="topnav-nav-item">Dashboard</a>
+      </nav>
+      <a href="index.html" class="btn-outline">Về trang chủ</a>
+    </div>
+  </header>
+
+  <main class="verify-email-page">
+    <section class="verify-email-card">
+
+      <div id="verifyLoading">
+        <p>Đang xác nhận email của bạn...</p>
+      </div>
+
+      <div id="verifySuccess" hidden>
+        <h1 class="font-mono text-green font-bold text-lg mb-2">✅ Email đã được xác nhận!</h1>
+        <p class="text-muted text-sm mb-4">Bạn có thể đăng nhập ngay bây giờ.</p>
+        <a href="index.html" class="btn-solid">Về trang chủ / Đăng nhập</a>
+      </div>
+
+      <div id="verifyFailed" hidden>
+        <h1 id="verifyFailedTitle" class="font-mono text-red font-bold text-lg mb-2"></h1>
+        <p id="verifyFailedMessage" class="text-muted text-sm mb-4"></p>
+
+        <form id="resendForm" class="flex flex-col gap-3">
+          <input id="resendEmail" type="email" placeholder="Email" class="auth-input" required>
+          <button type="submit" class="btn-solid">Gửi lại email xác nhận</button>
+        </form>
+        <p id="resendMessage" class="text-xs mt-3" hidden></p>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="verify-email.js"></script>
+</body>
+</html>

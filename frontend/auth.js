@@ -4,15 +4,60 @@ const API_BASE_URL = ["localhost", "127.0.0.1"].includes(window.location.hostnam
     ? `${window.location.protocol}//${window.location.host}`
     : "https://alphaquant-api-cg7b.onrender.com";
 
+const SIGNUP_ONLY_FIELD_IDS = ["authEmail", "authPhone", "authGender", "authConfirmPassword"];
+
 let authMode = "login";
+let pendingVerificationEmail = null;
+
+function showAuthMessage(message, { isError = true } = {}) {
+    const messageEl = document.getElementById("authErrorMessage");
+    messageEl.textContent = message;
+    messageEl.classList.remove("hidden");
+    messageEl.classList.toggle("text-red", isError);
+    messageEl.classList.toggle("text-green", !isError);
+}
+
+function hideAuthMessage() {
+    const messageEl = document.getElementById("authErrorMessage");
+    messageEl.textContent = "";
+    messageEl.classList.add("hidden");
+}
+
+function setAuthLoading(isLoading) {
+    const btn = document.getElementById("authSubmit");
+    btn.disabled = isLoading;
+    btn.textContent = isLoading ? "Đang xử lý..." : "Continue →";
+}
+
+function showCheckEmailPanel() {
+    document.getElementById("authFormFields").style.display = "none";
+    document.getElementById("authSubmit").style.display = "none";
+    document.getElementById("authCheckEmailPanel").classList.remove("hidden");
+    document.getElementById("authResendBtn").classList.remove("hidden");
+}
 
 function openModal(type) {
 
     authMode = type;
+    pendingVerificationEmail = null;
 
     const modal = document.getElementById("authModal");
     const title = document.getElementById("authModalTitle");
     const desc = document.getElementById("authModalDesc");
+
+    document.getElementById("authFormFields").style.display = "";
+    document.getElementById("authSubmit").style.display = "";
+    document.getElementById("authCheckEmailPanel").classList.add("hidden");
+    document.getElementById("authResendBtn").classList.add("hidden");
+    hideAuthMessage();
+
+    ["authUsername", "authEmail", "authPhone", "authGender", "authPassword", "authConfirmPassword"]
+        .forEach((id) => { document.getElementById(id).value = ""; });
+
+    const signupOnlyDisplay = type === "signup" ? "" : "none";
+    SIGNUP_ONLY_FIELD_IDS.forEach((id) => {
+        document.getElementById(id).style.display = signupOnlyDisplay;
+    });
 
     if (type === "login") {
         title.textContent = "LOGIN";
@@ -29,53 +74,98 @@ function closeModal() {
     document.getElementById("authModal").classList.remove("open");
 }
 
-async function signUp(username, password) {
+function validateSignupInput({ username, email, phone, gender, password, confirmPassword }) {
+    const v = window.AlphaQuantValidators;
 
-    const response = await fetch(
-        `${API_BASE_URL}/api/auth/signup`,
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                username,
-                password
-            })
-        }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-        alert(data.error);
-        return;
+    if (!username) {
+        return "Username là bắt buộc.";
     }
 
-    localStorage.setItem("authToken", data.token);
+    if (!v.isValidEmail(email)) {
+        return "Vui lòng nhập email hợp lệ.";
+    }
 
-    alert("Đăng ký thành công!");
+    if (!v.isValidVnPhoneNumber(phone)) {
+        return "Vui lòng nhập số điện thoại hợp lệ (VD: 0912345678).";
+    }
 
-    closeModal();
+    if (!v.isValidGender(gender)) {
+        return "Vui lòng chọn giới tính.";
+    }
 
-    updateNavbar();
+    if (!v.isValidPassword(password)) {
+        return `Mật khẩu phải có ít nhất ${v.MIN_PASSWORD_LENGTH} ký tự.`;
+    }
+
+    if (!v.passwordsMatch(password, confirmPassword)) {
+        return "Mật khẩu xác nhận không khớp.";
+    }
+
+    return null;
 }
 
+async function signUp({ username, email, phone, gender, password, confirmPassword }) {
 
+    setAuthLoading(true);
 
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/auth/signup`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username,
+                    email,
+                    phoneNumber: phone,
+                    gender,
+                    password,
+                    confirmPassword
+                })
+            }
+        );
 
+        const data = await response.json();
+
+        if (!response.ok) {
+            showAuthMessage(data.error);
+            return;
+        }
+
+        pendingVerificationEmail = data.email;
+        showCheckEmailPanel();
+
+    } catch {
+        showAuthMessage("Không thể kết nối tới máy chủ.");
+    } finally {
+        setAuthLoading(false);
+    }
+}
 
 async function handleAuth() {
 
-    const username =
-    document.getElementById("authUsername").value;
+    hideAuthMessage();
 
-    const password =
-    document.getElementById("authPassword").value;
+    const username = document.getElementById("authUsername").value.trim();
+    const password = document.getElementById("authPassword").value;
 
     if (authMode === "signup") {
 
-        await signUp(username, password);
+        const email = document.getElementById("authEmail").value.trim();
+        const phone = document.getElementById("authPhone").value.trim();
+        const gender = document.getElementById("authGender").value;
+        const confirmPassword = document.getElementById("authConfirmPassword").value;
+
+        const validationError = validateSignupInput({ username, email, phone, gender, password, confirmPassword });
+
+        if (validationError) {
+            showAuthMessage(validationError);
+            return;
+        }
+
+        await signUp({ username, email, phone, gender, password, confirmPassword });
 
     } else {
 
@@ -84,10 +174,6 @@ async function handleAuth() {
     }
 
 }
-
-
-
-
 
 document.addEventListener("DOMContentLoaded", () => {
     const btn = document.getElementById("authSubmit");
@@ -98,40 +184,86 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     btn.addEventListener("click", handleAuth);
-});
 
+    document.getElementById("authResendBtn")?.addEventListener("click", resendVerificationEmail);
+});
 
 async function login(username, password) {
 
-    const response = await fetch(
-        `${API_BASE_URL}/api/auth/login`,
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                username,
-                password
-            })
+    setAuthLoading(true);
+
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/auth/login`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username,
+                    password
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showAuthMessage(data.error);
+
+            if (data.code === "EMAIL_NOT_VERIFIED") {
+                pendingVerificationEmail = data.email;
+                document.getElementById("authResendBtn").classList.remove("hidden");
+            }
+
+            return;
         }
-    );
 
-    const data = await response.json();
+        localStorage.setItem("authToken", data.token);
 
-    if (!response.ok) {
-        alert(data.error);
+        closeModal();
+
+        updateNavbar();
+
+    } catch {
+        showAuthMessage("Không thể kết nối tới máy chủ.");
+    } finally {
+        setAuthLoading(false);
+    }
+}
+
+async function resendVerificationEmail() {
+
+    if (!pendingVerificationEmail) {
         return;
     }
 
-    localStorage.setItem("authToken", data.token);
+    const resendBtn = document.getElementById("authResendBtn");
+    resendBtn.disabled = true;
 
-    alert("Đăng nhập thành công!");
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/auth/resend-verification`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ email: pendingVerificationEmail })
+            }
+        );
 
-    closeModal();
+        const data = await response.json();
+        showAuthMessage(data.message || data.error, { isError: !response.ok });
 
-    updateNavbar();
+    } catch {
+        showAuthMessage("Không thể kết nối tới máy chủ.");
+    } finally {
+        resendBtn.disabled = false;
+    }
 }
+
 function logout() {
 
     localStorage.removeItem("authToken");

@@ -62,6 +62,8 @@ cp backend/.env.example backend/.env
 | `ALLOWED_ORIGINS` | — | Comma-separated list of frontend origins allowed to call this API (CORS allowlist). Optional, defaults to `http://localhost:3000` and `http://127.0.0.1:3000`. |
 | `SUPABASE_URL` | `backend/update_stock.py` only | Only needed if running the Python stock-sync script yourself. Not needed for the Node API server. |
 | `SUPABASE_SERVICE_KEY` | `backend/update_stock.py` only | Same as above. |
+| `FRONTEND_BASE_URL` | verification emails | Origin the verification link points to. Optional, defaults to `http://localhost:${PORT}`. **Must be set to the real deployed frontend origin before production use.** |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `EMAIL_FROM` | real email sending | All optional. If `SMTP_HOST` is unset, verification emails are logged to the server console instead of sent — the default, safe-for-local-dev behavior. |
 
 Notes:
 - `backend/.env` is gitignored — never commit it. Only `backend/.env.example` (blank placeholders) is tracked.
@@ -85,13 +87,22 @@ CREATE TABLE IF NOT EXISTS users (
     id serial PRIMARY KEY,
     username text UNIQUE NOT NULL,
     password text NOT NULL,
-    is_premium boolean NOT NULL DEFAULT false
+    is_premium boolean NOT NULL DEFAULT false,
+    email text UNIQUE,
+    phone_number text,
+    gender text CHECK (gender IN ('male', 'female', 'other', 'prefer_not_to_say')),
+    is_email_verified boolean NOT NULL DEFAULT true,
+    email_verification_token_hash text,
+    email_verification_expires_at timestamptz
 );
 ```
 
-If you already created a `users` table before `is_premium` existed, add the column instead of recreating the table:
+Note: `is_email_verified` defaults to `true` at the table level — that's intentional (see the migration comment below), not a mistake. New signups explicitly set it to `false` at the application layer (`backend/routes/auth.js`) until the user clicks their verification link.
+
+If you already have a `users` table from before one of these columns existed, add what's missing instead of recreating the table:
 ```bash
 psql -d <your-database> -f backend/migrations/0001-add-users-is-premium.sql
+psql -d <your-database> -f backend/migrations/0002-add-user-registration-fields.sql
 ```
 
 There's also `backend/migrations/0000-rehash-existing-passwords.js`, a one-time script that hashes any leftover plaintext passwords from before bcrypt was introduced. Irrelevant for a brand-new database — only run it if you're migrating an older one:
@@ -101,9 +112,23 @@ cd backend && npm run migrate:passwords
 
 ### Seed / test data
 
-There is no seed data and no automatic test-account creation. Testers create accounts themselves via the Sign Up form (or `POST /api/auth/signup` directly). To exercise the AI Tutor, grant a test account premium access manually:
+There is no seed data and no automatic test-account creation. Testers create accounts themselves via the Sign Up form (or `POST /api/auth/signup` directly) — new accounts must verify their email before they can log in (see below). To exercise the AI Tutor, grant a test account premium access manually:
 ```sql
 UPDATE users SET is_premium = true WHERE username = 'your-test-username';
+```
+
+### Email verification
+
+Signup now requires `email`, `phone_number` (Vietnamese mobile format, e.g. `0912345678`), `gender` (`male`/`female`/`other`/`prefer_not_to_say`), `password`, and a matching `confirmPassword`. New accounts start with `is_email_verified = false` and cannot log in (`403 EMAIL_NOT_VERIFIED`) until they click the link sent to their email.
+
+With no `SMTP_HOST` configured (the default), that email is never actually sent — instead, the verification link is printed to the **backend server's console/terminal**. Copy that link into a browser to complete verification during local testing. To grant verification manually instead:
+```sql
+UPDATE users SET is_email_verified = true WHERE username = 'your-test-username';
+```
+
+To simulate an expired verification link for testing:
+```sql
+UPDATE users SET email_verification_expires_at = now() - interval '1 day' WHERE username = 'your-test-username';
 ```
 
 ### Do testers need to manually create anything?
@@ -185,15 +210,26 @@ There is no Swagger/OpenAPI documentation in this project. Here are the real end
 curl http://localhost:3000/api/health
 curl http://localhost:3000/api/db-health
 
-# Sign up
+# Sign up (all 5 fields are required; phone must be a VN mobile number)
 curl -X POST http://localhost:3000/api/auth/signup \
   -H "Content-Type: application/json" \
-  -d "{\"username\":\"tester\",\"password\":\"test1234\"}"
+  -d "{\"username\":\"tester\",\"email\":\"tester@example.com\",\"phoneNumber\":\"0912345678\",\"gender\":\"other\",\"password\":\"test1234\",\"confirmPassword\":\"test1234\"}"
+# → check the backend server's console output for the verification link (no SMTP configured by default)
 
-# Log in (returns a JWT in the "token" field)
+# Log in — fails with 403 EMAIL_NOT_VERIFIED until the link above has been visited
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"tester\",\"password\":\"test1234\"}"
+
+# Verify email (paste the token from the console-logged link)
+curl -X POST http://localhost:3000/api/auth/verify-email \
+  -H "Content-Type: application/json" \
+  -d "{\"token\":\"<paste token here>\"}"
+
+# Resend verification email (always returns a generic success message)
+curl -X POST http://localhost:3000/api/auth/resend-verification \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"tester@example.com\"}"
 
 # Who am I (requires a token from signup/login)
 curl http://localhost:3000/api/auth/me \
@@ -208,17 +244,22 @@ curl -X POST http://localhost:3000/api/ai/tutor \
 
 Expected auth/authorization behavior worth checking:
 - No `Authorization` header on `/api/auth/me` or `/api/ai/tutor` → `401`.
+- Login before verifying email → `403` with `"code":"EMAIL_NOT_VERIFIED"` (and the account's `email`, so the client can offer a one-click resend).
 - Valid token but `is_premium = false` on `/api/ai/tutor` → `403` with `"code":"PREMIUM_REQUIRED"`.
-- More than 100 requests to any `/api/*` route within 15 minutes from the same client → `429`.
+- More than 100 requests to any `/api/*` route within 15 minutes from the same client → `429`; more than 5 requests to `/api/auth/resend-verification` within an hour → `429` on that route specifically.
 
 ### Manual UI testing checklist
 
-1. Sign up a new account → alert confirms success, navbar shows your username immediately (no reload needed).
-2. Log out → navbar reverts to Login/Sign Up.
-3. Log in with the wrong password → rejected, not logged in.
-4. Sign up with a username that already exists → rejected with a clear error, not a duplicate row.
-5. Open the AI Tutor as a non-premium account → locked screen, not the chat.
-6. Flip that account premium in the database (see section D) → reload or click "Upgrade to Premium" on the lock screen → chat unlocks and answers real questions via Gemini.
+1. Sign up a new account with all 5 fields → "check your email" panel shown (not an immediate login); the backend console prints the verification link.
+2. Try logging in with that same, still-unverified account → clear inline error plus a "resend verification email" action, right in the login modal.
+3. Copy the console-logged link into a browser → `verify-email.html` shows the success state.
+4. Log in again → succeeds normally, navbar shows the username.
+5. Log out → navbar reverts to Login/Sign Up.
+6. Sign up with a mismatched confirm-password, an invalid email, a non-VN phone number, or no gender selected → each shows a specific inline validation message, not a generic failure.
+7. Sign up with a username or email that already exists → distinct, clear error for each case, not a duplicate row.
+8. **Regression check**: log in with an account that existed *before* this feature (e.g. one of the earlier test accounts from prior milestones) → must still work unaffected, since existing accounts are grandfathered as already-verified by the migration.
+9. Open the AI Tutor as a non-premium (but verified) account → locked screen, not the chat.
+10. Flip that account premium in the database (see section D) → reload or click "Upgrade to Premium" on the lock screen → chat unlocks and answers real questions via Gemini.
 
 ## I. Troubleshooting
 
@@ -253,6 +294,12 @@ Confirm the backend is actually running (`npm run dev` in `backend/`) and check 
 
 **Frontend unable to connect to API**
 Almost always caused by loading the frontend from the wrong place — see [section F](#f-running-the-frontend). Load it via `http://localhost:3000/frontend/index.html`, served by the Express backend itself, not via a separate static server or `file://`.
+
+**"I signed up but never got a verification email"**
+Expected if `SMTP_HOST` isn't set in `backend/.env` — that's the default, safe-for-local-dev behavior (see section C). Check the **backend server's own console/terminal output** for a line starting with `===== Email (console fallback` containing the verification link, and open that link directly. This is not a bug; it's how the feature behaves without a real email provider configured.
+
+**Login fails with "Please verify your email before logging in"**
+Expected for any account that hasn't clicked its verification link yet (`403 EMAIL_NOT_VERIFIED`). Either find the link in the backend console (see above), or use the "resend verification email" action shown in the login error, or manually run `UPDATE users SET is_email_verified = true WHERE username = '...';` for a test account.
 
 **Missing dependencies**
 - Backend: re-run `npm install` in `backend/`. If `bcrypt` fails to build, it needs native compilation — this worked without extra setup on Windows/Node 24 during testing, but if it fails on your machine you may need build tools (Python + a C++ compiler; on Windows, the "Desktop development with C++" workload in Visual Studio Build Tools).

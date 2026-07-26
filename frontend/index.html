@@ -55,7 +55,7 @@
     </div>
     <p class="text-muted text-sm mb-5" id="authModalDesc">Đăng nhập vào tài khoản AlphaQuant của bạn.</p>
 
-    <div class="flex flex-col gap-3">
+    <div id="authFormFields" class="flex flex-col gap-3">
 
       <input
           id="authUsername"
@@ -73,12 +73,55 @@
       >
 
       <input
+          id="authPhone"
+          type="text"
+          placeholder="Số điện thoại / Phone (09xxxxxxxx)"
+          class="auth-input"
+          style="display: none;"
+      >
+
+      <select
+          id="authGender"
+          class="auth-input"
+          style="display: none;"
+      >
+        <option value="">Giới tính / Gender</option>
+        <option value="male">Nam</option>
+        <option value="female">Nữ</option>
+        <option value="other">Khác</option>
+        <option value="prefer_not_to_say">Không muốn tiết lộ</option>
+      </select>
+
+      <input
           id="authPassword"
           type="password"
           placeholder="Mật khẩu / Password"
           class="auth-input"
       >
 
+      <input
+          id="authConfirmPassword"
+          type="password"
+          placeholder="Xác nhận mật khẩu / Confirm password"
+          class="auth-input"
+          style="display: none;"
+      >
+
+    </div>
+
+    <p id="authErrorMessage" class="text-red text-xs mt-3 hidden"></p>
+
+    <button
+        id="authResendBtn"
+        type="button"
+        class="text-green text-xs underline mt-2 hidden">
+        Gửi lại email xác nhận / Resend verification email
+    </button>
+
+    <div id="authCheckEmailPanel" class="hidden">
+      <p class="text-sm text-muted mt-1">
+        Vui lòng kiểm tra email để xác nhận tài khoản trước khi đăng nhập. / Please check your email to verify your account before logging in.
+      </p>
     </div>
 
     <button
@@ -761,6 +804,7 @@
 
 <script src="supabase.js"></script>
 
+<script src="validators.js"></script>
 
 <script src="auth.js"></script>
 

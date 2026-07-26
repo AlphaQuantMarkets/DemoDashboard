@@ -1136,6 +1136,24 @@ input[type=range] {
 .auth-input::placeholder { color: var(--muted); }
 .auth-input:focus { border-color: var(--green); }
 
+.verify-email-page {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.verify-email-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 32px;
+  width: 400px;
+  max-width: 92vw;
+  text-align: center;
+}
+.verify-email-card form { text-align: left; }
+
 /* ══════════════════════════════════════════════════════════════════════
    FOOTER
 ══════════════════════════════════════════════════════════════════════ */
