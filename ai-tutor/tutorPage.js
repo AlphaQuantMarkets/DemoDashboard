@@ -37,12 +37,14 @@
   }
 
   async function initializePage() {
+    const loginGate = document.getElementById('loginGate');
     const premiumGate = document.getElementById('premiumGate');
     const tutorApp = document.getElementById('tutorApp');
     const access = await window.TutorPremiumAccess.getTutorAccess();
-    premiumGate.hidden = access.isPremium;
-    tutorApp.hidden = !access.isPremium;
-    if (!access.isPremium) return;
+    loginGate.hidden = access.status !== 'loggedOut';
+    premiumGate.hidden = access.status !== 'free';
+    tutorApp.hidden = access.status !== 'premium';
+    if (access.status !== 'premium') return;
 
     const form = document.getElementById('tutorForm');
     const input = document.getElementById('tutorInput');

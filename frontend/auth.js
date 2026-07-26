@@ -1,9 +1,5 @@
 console.log("auth.js đã được load");
 
-const API_BASE_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
-    ? `${window.location.protocol}//${window.location.host}`
-    : "https://alphaquant-api-cg7b.onrender.com";
-
 const SIGNUP_ONLY_FIELD_IDS = ["authEmail", "authPhone", "authGender", "authConfirmPassword"];
 
 let authMode = "login";
@@ -226,6 +222,8 @@ async function login(username, password) {
 
         updateNavbar();
 
+        window.location.href = "/dashboard";
+
     } catch {
         showAuthMessage("Không thể kết nối tới máy chủ.");
     } finally {
@@ -272,32 +270,34 @@ function logout() {
 
 }
 
-function decodeToken(token) {
-    try {
-        const payload = token.split(".")[1];
-        return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-    } catch {
-        return null;
-    }
-}
-
-function getCurrentUser() {
+// getCurrentUser() (frontend/config.js) only decodes the token locally (no
+// signature check), so it's safe for optimistic UI only. verifySession()
+// confirms the token against the backend, logs the user out if it's
+// invalid/expired/forged, and reports whether the session is still valid.
+async function verifySession() {
     const token = localStorage.getItem("authToken");
 
     if (!token) {
-        return null;
+        return false;
     }
 
-    const payload = decodeToken(token);
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
 
-    if (!payload || (payload.exp && Date.now() >= payload.exp * 1000)) {
-        return null;
+        if (!response.ok) {
+            localStorage.removeItem("authToken");
+            updateNavbar();
+            return false;
+        }
+
+        return true;
+    } catch {
+        // Network/backend unreachable: keep the optimistic local session rather
+        // than force-logout on a transient error.
+        return true;
     }
-
-    return {
-        id: payload.id,
-        username: payload.username
-    };
 }
 
 function updateNavbar() {
@@ -308,6 +308,10 @@ function updateNavbar() {
     const signupBtn = document.getElementById("signupBtn");
     const userInfo = document.getElementById("userInfo");
     const logoutBtn = document.getElementById("logoutBtn");
+
+    if (!loginBtn || !signupBtn || !userInfo || !logoutBtn) {
+        return;
+    }
 
     if (user) {
 
@@ -334,10 +338,16 @@ function updateNavbar() {
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.logout = logout;
-window.getCurrentUser = getCurrentUser;
+window.verifySession = verifySession;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
     updateNavbar();
+
+    const isSessionValid = await verifySession();
+
+    if (!isSessionValid && window.location.pathname.endsWith("/dashboard.html")) {
+        window.location.replace("/auth");
+    }
 
 });

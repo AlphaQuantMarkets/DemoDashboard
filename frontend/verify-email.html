@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AlphaQuant | Xác nhận Email</title>
+  <script src="config.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -12,10 +13,10 @@
   <header class="topnav">
     <div class="topnav-nav-row">
       <nav class="topnav-nav" aria-label="Main navigation">
-        <a href="index.html" class="topnav-nav-item topnav-nav-home" title="AlphaQuant dashboard">
+        <a href="index.html" class="topnav-nav-item topnav-nav-home" title="AlphaQuant Home">
           <img src="assets/home-button.jpg" alt="AlphaQuant" class="topnav-home-icon" />
         </a>
-        <a href="index.html" class="topnav-nav-item">Dashboard</a>
+        <a href="dashboard.html" class="topnav-nav-item">Dashboard</a>
       </nav>
       <a href="index.html" class="btn-outline">Về trang chủ</a>
     </div>
@@ -31,7 +32,7 @@
       <div id="verifySuccess" hidden>
         <h1 class="font-mono text-green font-bold text-lg mb-2">✅ Email đã được xác nhận!</h1>
         <p class="text-muted text-sm mb-4">Bạn có thể đăng nhập ngay bây giờ.</p>
-        <a href="index.html" class="btn-solid">Về trang chủ / Đăng nhập</a>
+        <a href="auth.html" class="btn-solid">Đăng nhập</a>
       </div>
 
       <div id="verifyFailed" hidden>

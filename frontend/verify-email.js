@@ -1,7 +1,3 @@
-const API_BASE_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
-    ? `${window.location.protocol}//${window.location.host}`
-    : "https://alphaquant-api-cg7b.onrender.com";
-
 function showPanel(id) {
     ["verifyLoading", "verifySuccess", "verifyFailed"].forEach((panelId) => {
         document.getElementById(panelId).hidden = panelId !== id;

@@ -8,8 +8,7 @@
   }
 
   function apiUrl(path) {
-    const baseUrl = window.ALPHAQUANT_API_BASE_URL || '';
-    return baseUrl ? new URL(path, baseUrl).toString() : path;
+    return `${API_BASE_URL}${path}`;
   }
 
   async function askTutor({ question, userLevel, stockContext }) {

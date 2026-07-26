@@ -1,8 +1,11 @@
 (function createTutorPremiumAccess() {
+  // status: 'loggedOut' (no/invalid/expired token), 'free' (authenticated,
+  // not premium), or 'premium' (authenticated and premium). Always verified
+  // against the backend — never trusts a locally-decoded token.
   async function getTutorAccess() {
     const token = localStorage.getItem('authToken');
     if (!token) {
-      return { isPremium: false, user: null };
+      return { status: 'loggedOut', isPremium: false, user: null };
     }
 
     try {
@@ -11,13 +14,17 @@
       });
 
       if (!response.ok) {
-        return { isPremium: false, user: null };
+        if (response.status === 401) {
+          localStorage.removeItem('authToken');
+        }
+        return { status: 'loggedOut', isPremium: false, user: null };
       }
 
       const { user } = await response.json();
-      return { isPremium: user?.is_premium === true, user };
+      const isPremium = user?.is_premium === true;
+      return { status: isPremium ? 'premium' : 'free', isPremium, user };
     } catch {
-      return { isPremium: false, user: null };
+      return { status: 'loggedOut', isPremium: false, user: null };
     }
   }
 

@@ -50,11 +50,25 @@ app.use("/api/stocks", stocksRoutes);
 app.use("/api/auth/resend-verification", resendVerificationRateLimiter);
 app.use("/api/auth", authRoutes);
 
+// Clean URLs for the public/auth/dashboard pages. Redirecting (rather than
+// sendFile-ing) keeps the browser's URL under /frontend/*, so each page's
+// own relative asset paths (config.js, style.css, ...) keep resolving
+// correctly.
 app.get("/", (req, res) => {
-    res.json({
-        message: "AlphaQuant API is running",
-        health: "/api/health"
-    });
+    res.redirect("/frontend/index.html");
+});
+
+app.get("/auth", (req, res) => {
+    const query = req.url.split("?")[1];
+    res.redirect(query ? `/frontend/auth.html?${query}` : "/frontend/auth.html");
+});
+
+app.get("/pricing", (req, res) => {
+    res.redirect("/frontend/pricing.html");
+});
+
+app.get("/dashboard", (req, res) => {
+    res.redirect("/frontend/dashboard.html");
 });
 
 app.get("/api/health", (req, res) => {

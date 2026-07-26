@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AlphaQuant | AI Investment Tutor</title>
+  <script src="../frontend/config.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../frontend/style.css" />
   <link rel="stylesheet" href="style.css" />
@@ -15,15 +16,15 @@
   <header class="topnav tutor-topnav">
     <div class="topnav-nav-row">
       <nav class="topnav-nav" aria-label="Main navigation">
-        <a href="../frontend/index.html" class="topnav-nav-item topnav-nav-home" title="AlphaQuant dashboard">
+        <a href="../frontend/index.html" class="topnav-nav-item topnav-nav-home" title="AlphaQuant Home">
           <img src="../frontend/assets/home-button.jpg" alt="AlphaQuant" class="topnav-home-icon" />
         </a>
-        <a href="../frontend/index.html" class="topnav-nav-item">Dashboard</a>
-        <a href="../frontend/index.html#compare" class="topnav-nav-item">Compare</a>
-        <a href="../frontend/index.html#risk" class="topnav-nav-item">Risk Assessment</a>
+        <a href="../frontend/dashboard.html" class="topnav-nav-item">Dashboard</a>
+        <a href="../frontend/dashboard.html#compare" class="topnav-nav-item">Compare</a>
+        <a href="../frontend/dashboard.html#risk" class="topnav-nav-item">Risk Assessment</a>
         <a href="./" class="topnav-nav-item tutor-nav-active" aria-current="page">AI Tutor <span>Premium</span></a>
       </nav>
-      <a href="../frontend/index.html" class="btn-outline tutor-dashboard-link">Back to dashboard</a>
+      <a href="../frontend/dashboard.html" class="btn-outline tutor-dashboard-link">Back to dashboard</a>
     </div>
   </header>
 
@@ -37,13 +38,21 @@
       <span id="stockContextLabel" class="tutor-context-label">General investment learning mode</span>
     </section>
 
+    <section id="loginGate" class="premium-gate" hidden>
+      <div class="premium-gate__lock" aria-hidden="true">&#128274;</div>
+      <p class="tutor-kicker">SIGN IN REQUIRED</p>
+      <h2>Please sign in to use the AI Investment Tutor.</h2>
+      <p>This is a Premium feature available to signed-in, subscribed users only.</p>
+      <a href="../frontend/auth.html" class="btn-solid">Log in</a>
+    </section>
+
     <section id="premiumGate" class="premium-gate" hidden>
       <div class="premium-gate__lock" aria-hidden="true">&#128274;</div>
       <p class="tutor-kicker">PREMIUM FEATURE</p>
       <h2>AI Investment Tutor is a Premium feature.</h2>
       <p>Learn investing concepts, understand risk metrics, and explore the context behind the stock you are viewing.</p>
       <button id="developmentUpgradeButton" type="button" class="btn-solid">Upgrade to Premium</button>
-      <p class="premium-gate__note">Premium subscriptions are not connected yet. On localhost, this button unlocks the development preview.</p>
+      <p class="premium-gate__note">Premium subscriptions are not connected yet. Ask an admin to enable Premium on your account, then click below to check again.</p>
     </section>
 
     <section id="tutorApp" class="tutor-app" hidden>

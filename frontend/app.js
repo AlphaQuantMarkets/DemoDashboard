@@ -1,9 +1,5 @@
 /* ─── ALPHAQUANT · app.js ────────────────────────────────────────────── */
 
-const STOCKS_API_BASE_URL = ['localhost', '127.0.0.1'].includes(window.location.hostname)
-  ? `${window.location.protocol}//${window.location.host}`
-  : 'https://alphaquant-api-cg7b.onrender.com';
-
 async function loadStockData(tickers) {
   console.log("📥 Loading real data from backend API for tickers:", tickers);
 
@@ -11,7 +7,7 @@ async function loadStockData(tickers) {
     const dataByTicker = {};
 
     await Promise.all(tickers.map(async (ticker) => {
-      const response = await fetch(`${STOCKS_API_BASE_URL}/api/stocks/${ticker}/history`);
+      const response = await fetch(`${API_BASE_URL}/api/stocks/${ticker}/history`);
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
