@@ -8,7 +8,7 @@ Detailed technical setup instructions. For a quick start, see the [README](../RE
 - **Frontend**: static HTML/CSS/vanilla JavaScript (`frontend/`, `ai-tutor/`) — no build step, no bundler, no frontend `package.json`. It's served as static files by the same Express backend.
 - **Two separate databases**, for two unrelated purposes (see [Database](#d-database) below):
   - A generic Postgres database (`DATABASE_URL`) holding the `users` table — you set this up yourself.
-  - A shared Supabase Postgres project (hardcoded in `frontend/supabase.js`) holding the `stock_prices` table — already live, no setup needed.
+  - A shared Supabase Postgres project holding the `stock_prices` table — already live, read server-side by `backend/services/stockService.js` and exposed to the frontend via `GET /api/stocks/:symbol/history`.
 - **A standalone Python script** (`backend/update_stock.py`) syncs stock price data into Supabase on a schedule (via GitHub Actions). It is not part of the API server and is not required to run or test the application.
 
 ## A. Prerequisites
@@ -38,7 +38,7 @@ cd backend
 npm install
 ```
 
-Install frontend dependencies: **there are none to install.** The frontend has no `package.json` — it's plain HTML/CSS/JS, and its three external libraries (Tailwind CSS, Plotly.js, the Supabase JS SDK) load directly from public CDNs via `<script>` tags in `frontend/index.html` and `ai-tutor/index.html`. You need internet access when the page loads, but there's no install step.
+Install frontend dependencies: **there are none to install.** The frontend has no `package.json` — it's plain HTML/CSS/JS, and its external libraries (Tailwind CSS, Plotly.js) load directly from public CDNs via `<script>` tags in `frontend/index.html` and `ai-tutor/index.html`. You need internet access when the page loads, but there's no install step.
 
 Install Python dependencies — **only if** you intend to run the stock-price sync script yourself (most people won't need to):
 ```bash
@@ -60,15 +60,15 @@ cp backend/.env.example backend/.env
 | `JWT_SECRET` | same routes as `DATABASE_URL` | Secret used to sign and verify JWT session tokens. Without it, those routes return `503`. Generate one locally: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `GEMINI_API_KEY` | `POST /api/ai/tutor` | Google Gemini API key used to generate AI Tutor responses. |
 | `ALLOWED_ORIGINS` | — | Comma-separated list of frontend origins allowed to call this API (CORS allowlist). Optional, defaults to `http://localhost:3000` and `http://127.0.0.1:3000`. |
-| `SUPABASE_URL` | `backend/update_stock.py` only | Only needed if running the Python stock-sync script yourself. Not needed for the Node API server. |
-| `SUPABASE_SERVICE_KEY` | `backend/update_stock.py` only | Same as above. |
+| `SUPABASE_URL` | `GET /api/stocks/:symbol/history`, `backend/update_stock.py` | Required for the dashboard's stock-price route (returns `503` without it) and for running the Python stock-sync script yourself. |
+| `SUPABASE_SERVICE_KEY` | `GET /api/stocks/:symbol/history`, `backend/update_stock.py` | Same as above — a service-role key, kept server-side only. |
 | `FRONTEND_BASE_URL` | verification emails | Origin the verification link points to. Optional, defaults to `http://localhost:${PORT}`. **Must be set to the real deployed frontend origin before production use.** |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `EMAIL_FROM` | real email sending | All optional. If `SMTP_HOST` is unset, verification emails are logged to the server console instead of sent — the default, safe-for-local-dev behavior. |
 
 Notes:
 - `backend/.env` is gitignored — never commit it. Only `backend/.env.example` (blank placeholders) is tracked.
 - No real API keys or secrets are included anywhere in this repository.
-- The frontend needs **no** environment variables and has no build step to inject them into — `frontend/supabase.js` hardcodes a Supabase **publishable/anon** key, which is safe to expose client-side by design (read-only access to `stock_prices`).
+- The frontend needs **no** environment variables and has no build step to inject them into — it reads stock prices through the backend's `/api/stocks/:symbol/history` route instead of talking to Supabase directly, so no Supabase key ships to the browser.
 
 ## D. Database
 
@@ -76,9 +76,15 @@ This project uses **two separate Postgres databases**, for two unrelated purpose
 
 ### 1. `stock_prices` — real stock market data (Supabase, already live)
 
-Hardcoded to a shared, already-running Supabase project in `frontend/supabase.js` (a publishable/anon key, safe to expose in client-side code). **You don't need to set anything up for this** — opening the dashboard just works, as long as that project is up and you have internet access. This is a shared resource across the whole team, not something each developer creates individually.
+A shared, already-running Supabase project, read server-side via `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` (see [Environment variables](#c-environment-variables)) and served to the frontend through `GET /api/stocks/:symbol/history`. **You don't need to set anything up for this** beyond those two env vars — this is a shared resource across the whole team, not something each developer creates individually.
 
 Its schema is version-controlled at `backend/migrations/0003-create-stock-prices-table.sql`, but you won't normally need to run it — it's only relevant if you're ever provisioning a brand-new Supabase project from scratch (e.g. a separate staging environment). It's a plain SQL file, not managed by `npm run migrate`, since that table lives on a different Postgres database than `DATABASE_URL` points at; run it manually via the Supabase SQL editor or `psql` against that project's own connection string.
+
+**No Supabase access?** `backend/services/stockService.js` falls back to reading `stock_prices` from your local `DATABASE_URL` database instead, whenever `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` aren't set. Populate it with synthetic (clearly non-real) OHLCV rows for local testing:
+```bash
+cd backend && npm run seed:stocks
+```
+This is a local-dev convenience only — it's not wired into `update_stock.py`, GitHub Actions, or anything else the team shares, and production should keep using the real Supabase project.
 
 ### 2. `users` — accounts, sessions, premium status (your own Postgres, via `DATABASE_URL`)
 
@@ -160,7 +166,7 @@ There is no separate frontend server or build process — the same Express backe
 - Loaded from `http://localhost:3000/...` → correctly targets `http://localhost:3000` (this same backend).
 - Loaded from `file://...`, or from a *different* local port (e.g. `http://localhost:5500` via Live Server) → does not correctly reach your local backend; auth/AI Tutor requests will fail or silently hit the wrong server.
 
-The dashboard's stock-price charts will still render even if the frontend is loaded incorrectly, since those go straight to the shared Supabase project — it's specifically login, signup, and the AI Tutor that require being served from the same origin as the backend.
+`frontend/app.js` resolves the same backend for stock-price data (`GET /api/stocks/:symbol/history`) the same way — so loading the frontend incorrectly breaks the price charts too, not just login, signup, and the AI Tutor.
 
 ## G. Running the full application — step by step
 

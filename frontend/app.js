@@ -47,77 +47,43 @@ function generateStockData(ticker, days = 365) {
   }));
 }
 
+const STOCKS_API_BASE_URL = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  ? `${window.location.protocol}//${window.location.host}`
+  : 'https://alphaquant-api-cg7b.onrender.com';
+
 async function loadStockData(tickers) {
-  console.log("📥 Loading real data from Supabase for tickers:", tickers);
-  
-  if (!window.supabaseClient) {
-    throw new Error('Supabase client is unavailable');
-  }
+  console.log("📥 Loading real data from backend API for tickers:", tickers);
 
   try {
-    const rows = [];
-    const pageSize = 1000;
-    
-    for (let from = 0; ; from += pageSize) {
-      const { data, error } = await window.supabaseClient
-        .from('stock_prices')
-        .select('symbol, trading_date, open, high, low, close, volume')
-        .in('symbol', tickers)
-        .order('trading_date', { ascending: true })
-        .range(from, from + pageSize - 1);
-
-      if (error) {
-        console.error('❌ Supabase select error:', error);
-        throw error;
-      }
-      
-      if (!data || data.length === 0) {
-        if (from === 0) {
-          console.warn('⚠️ No data found for symbols:', tickers);
-          console.warn('Make sure to run: python backend/fetch_stock_data.py');
-        }
-        break;
-      }
-
-      rows.push(...data);
-      console.log(`  Fetched batch ${Math.floor(from/pageSize) + 1}: ${data.length} rows`);
-      
-      if (data.length < pageSize) break;
-    }
-
-    console.log(`✅ Total: ${rows.length} records from Supabase`);
-
-    // Group by ticker
     const dataByTicker = {};
-    for (const ticker of tickers) {
-      dataByTicker[ticker] = [];
-    }
 
-    for (const row of rows) {
-      if (dataByTicker[row.symbol]) {
-        dataByTicker[row.symbol].push({
-          date: new Date(`${row.trading_date}T00:00:00Z`),
-          open: Number(row.open),
-          high: Number(row.high),
-          low: Number(row.low),
-          close: Number(row.close),
-          volume: Number(row.volume),
-        });
+    await Promise.all(tickers.map(async (ticker) => {
+      const response = await fetch(`${STOCKS_API_BASE_URL}/api/stocks/${ticker}/history`);
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || `Failed to load ${ticker} (HTTP ${response.status})`);
       }
+
+      const { history } = await response.json();
+
+      dataByTicker[ticker] = (history || []).map(row => ({
+        date: new Date(`${row.date}T00:00:00Z`),
+        open: row.open,
+        high: row.high,
+        low: row.low,
+        close: row.close,
+        volume: row.volume,
+      }));
+
+      console.log(`  ${ticker}: ${dataByTicker[ticker].length} days`);
+    }));
+
+    if (!tickers.some(ticker => dataByTicker[ticker].length > 0)) {
+      console.warn('⚠️ No data found for symbols:', tickers);
     }
 
-    // Limit to last 500 days per ticker & sort by date
-    for (const ticker of tickers) {
-      let data = dataByTicker[ticker];
-      if (data.length > 500) {
-        data = data.slice(-500);
-      }
-      // Ensure sorted ascending by date
-      data.sort((a, b) => a.date - b.date);
-      dataByTicker[ticker] = data;
-      console.log(`  ${ticker}: ${data.length} days (${data[0]?.date.toDateString()} → ${data[data.length-1]?.date.toDateString()})`);
-    }
-
+    console.log(`✅ Real data loaded for ${tickers.length} tickers`);
     return dataByTicker;
   } catch (error) {
     console.error('❌ Failed to load stock data:', error.message);
@@ -1345,17 +1311,17 @@ async function init() {
   STATE.glossary  = json.glossary;
   await loadProductGuides();
 
-  // ========== REAL DATA FROM SUPABASE ==========
+  // ========== REAL DATA FROM BACKEND API ==========
   const tickers = ['FPT', 'HPG', 'VNM', 'VNINDEX']; // Only 3 symbols, plus the VN-Index benchmark used for Beta
-  console.log('🔄 Initializing with real data from Supabase...');
+  console.log('🔄 Initializing with real data from the backend API...');
 
   try {
     const realData = await loadStockData(tickers);
-    
+
     // Verify data loaded successfully
     const hasData = Object.values(realData).some(arr => arr.length > 0);
     if (!hasData) {
-      throw new Error('No data returned from Supabase');
+      throw new Error('No data returned from the backend API');
     }
     
     STATE.allData = realData;

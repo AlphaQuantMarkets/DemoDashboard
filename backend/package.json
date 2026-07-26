@@ -11,6 +11,7 @@
     "dev": "nodemon server.js",
     "migrate": "node run-migrations.js",
     "migrate:passwords": "node migrations/0000-rehash-existing-passwords.js",
+    "seed:stocks": "node scripts/seed-local-stock-prices.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -27,6 +28,7 @@
   "homepage": "https://github.com/AlphaQuantMarkets/DemoDashboard#readme",
   "dependencies": {
     "@google/genai": "^2.13.0",
+    "@supabase/supabase-js": "^2.110.8",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

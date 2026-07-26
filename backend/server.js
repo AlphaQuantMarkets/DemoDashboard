@@ -7,6 +7,7 @@ const path = require("path");
 const pool = require("./db");
 const authRoutes = require("./routes/auth");
 const aiRoutes = require("./routes/ai");
+const stocksRoutes = require("./routes/stocks");
 
 const DEFAULT_DEV_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"];
 
@@ -44,6 +45,7 @@ app.use(cors({
 app.use(express.json());
 app.use("/api", apiRateLimiter);
 app.use("/api/ai", aiRoutes);
+app.use("/api/stocks", stocksRoutes);
 
 app.use("/api/auth/resend-verification", resendVerificationRateLimiter);
 app.use("/api/auth", authRoutes);
