@@ -268,6 +268,10 @@ function logout() {
 
     updateNavbar();
 
+    if (window.location.pathname.endsWith("/dashboard.html")) {
+        window.location.href = "/";
+    }
+
 }
 
 // getCurrentUser() (frontend/config.js) only decodes the token locally (no
