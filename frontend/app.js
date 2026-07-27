@@ -478,6 +478,20 @@ function initMetricsGuide() {
   window.addEventListener('resize', onResize);
 }
 
+const WATCHLIST_STORAGE_KEY = 'alphaquant_watchlist_v1';
+const DEFAULT_WATCHLIST = ['FPT', 'HPG'];
+
+function loadWatchlistFromStorage() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(WATCHLIST_STORAGE_KEY));
+    return Array.isArray(saved) && saved.every(t => typeof t === 'string')
+      ? saved
+      : [...DEFAULT_WATCHLIST];
+  } catch {
+    return [...DEFAULT_WATCHLIST];
+  }
+}
+
 const STATE = {
   stocks:     {},
   glossary:   [],
@@ -486,7 +500,7 @@ const STATE = {
   period:     180,
   compareSet: new Set(),
   allData:    {},
-  watchlist:  ['FPT', 'HPG'],   // default watchlist
+  watchlist:  loadWatchlistFromStorage(),
   replay:     {
     day: 365,
     timer: null,
@@ -560,6 +574,51 @@ function initSearch() {
 /* ═══════════════════════════════════════════════════════════════════════
    6. WATCHLIST
    ═══════════════════════════════════════════════════════════════════════ */
+// Always mirrors to localStorage; also pushes to the backend for logged-in
+// users so the watchlist survives a localStorage clear / new device.
+function saveWatchlist() {
+  localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(STATE.watchlist));
+
+  if (!getCurrentUser()) return;
+
+  fetch(`${API_BASE_URL}/api/user-state/watchlist`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    },
+    body: JSON.stringify({ tickers: STATE.watchlist })
+  }).catch(() => {
+    console.warn('⚠️ Could not sync watchlist to the server; kept locally.');
+  });
+}
+
+// Pulls the logged-in user's saved watchlist from the backend, if any, and
+// re-renders. Logged-out users keep the localStorage-only behavior above.
+async function syncWatchlistFromBackend() {
+  if (!getCurrentUser()) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/user-state/watchlist`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+    });
+    if (!response.ok) return;
+
+    const { tickers } = await response.json();
+
+    if (Array.isArray(tickers)) {
+      STATE.watchlist = tickers;
+      localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(tickers));
+      renderWatchlist();
+    } else {
+      // No watchlist saved on the server yet — seed it with the local one.
+      saveWatchlist();
+    }
+  } catch {
+    // Offline/backend unreachable: keep using the local watchlist.
+  }
+}
+
 function renderWatchlist() {
   const container = document.getElementById('watchlistItems');
   container.innerHTML = '';
@@ -604,6 +663,7 @@ function renderWatchlist() {
     item.querySelector('.watchlist-remove').addEventListener('click', e => {
       e.stopPropagation();
       STATE.watchlist = STATE.watchlist.filter(t => t !== ticker);
+      saveWatchlist();
       renderWatchlist();
     });
     
@@ -616,6 +676,7 @@ function initWatchlist() {
     const ticker = STATE.selected;
     if (!STATE.watchlist.includes(ticker)) {
       STATE.watchlist.push(ticker);
+      saveWatchlist();
       renderWatchlist();
     }
   });
@@ -1293,6 +1354,7 @@ async function init() {
   initWatchlist();
   initProductGuidePanel();
   renderWatchlist();
+  syncWatchlistFromBackend();
   render();
   updateClock();
   setInterval(updateClock, 1000);
