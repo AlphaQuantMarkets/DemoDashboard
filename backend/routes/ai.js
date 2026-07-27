@@ -11,6 +11,11 @@ const authMiddleware = require("../middleware/authMiddleware");
 const RISK_LEVELS = ["low", "medium", "high"];
 const TRENDS = ["up", "down", "flat"];
 
+// Shown instead of a tutor answer that slipped past the prompt's safety rules
+// and gave a directive buy/sell/hold recommendation. Steers the user back to
+// what the tutor is for rather than just refusing.
+const TUTOR_SAFETY_FALLBACK = "Mình không thể đưa ra khuyến nghị mua, bán hay nắm giữ một cổ phiếu cụ thể. Bạn có thể hỏi mình về cách đọc các chỉ số rủi ro hoặc các khái niệm đầu tư nhé.";
+
 function isFiniteNumber(value) {
     return typeof value === "number" && Number.isFinite(value);
 }
@@ -83,7 +88,11 @@ router.post("/tutor", authMiddleware, requirePremiumTutorAccess, async (req, res
                 : null
         });
 
-        const answer = await askGemini(prompt);
+        const rawAnswer = await askGemini(prompt);
+        const answer = sanitizeExplanation(rawAnswer, {
+            fallbackMessage: TUTOR_SAFETY_FALLBACK,
+            source: "tutor"
+        });
 
         res.json({
             answer
@@ -117,7 +126,7 @@ router.post("/risk-explanation", async (req, res) => {
 
         const prompt = buildRiskExplanationPrompt({ symbol, companyName, riskScore, riskLevel, metrics });
         const rawExplanation = await askGemini(prompt);
-        const explanation = sanitizeExplanation(rawExplanation);
+        const explanation = sanitizeExplanation(rawExplanation, { source: "risk-explanation" });
 
         res.json({
             explanation
