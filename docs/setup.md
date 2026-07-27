@@ -86,6 +86,13 @@ cd backend && npm run seed:stocks
 ```
 This is a local-dev convenience only — it's not wired into `update_stock.py`, GitHub Actions, or anything else the team shares, and production should keep using the real Supabase project.
 
+**Refreshing stock data.** Two separate scripts, for two separate things — run from `backend/` with `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` set in `backend/.env`:
+
+- `python update_stock.py` — syncs price history (what `.github/workflows/update-stock.yml` already runs daily). Symbols come from vnstock's live VN30 listing (falls back to a static snapshot if that lookup fails), so index rebalances are picked up automatically without a code change. One symbol failing to fetch doesn't stop the rest.
+- `python sync_stock_list.py` — refreshes `frontend/stocks.json`'s ticker list (which symbols appear in the picker/compare/watchlist, plus their display names) from the same VN30 listing. This is separate from the price sync since it touches a checked-in file rather than Supabase — run it by hand only when the symbol universe actually changes, not on every price refresh. Existing entries' curated names are never overwritten; new symbols get their name from vnstock's own listing.
+
+Both need the Python env from [Prerequisites](#a-prerequisites)/[Installation](#b-installation) (`pip install -r requirements.txt`, Python 3.11/3.12).
+
 ### 2. `users` — accounts, sessions, premium status (your own Postgres, via `DATABASE_URL`)
 
 You need your own instance of this — a fresh local Postgres install, a Docker container, or your own hosted Postgres (a second Supabase project also works, since Supabase is just Postgres). Schema migrations are managed by [`node-pg-migrate`](https://www.npmjs.com/package/node-pg-migrate), configured in `backend/run-migrations.js`. Once `DATABASE_URL` is set in `backend/.env`, create the schema with:

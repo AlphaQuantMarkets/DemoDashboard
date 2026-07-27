@@ -1,13 +1,103 @@
 {
   "stocks": {
-    "VNM": { "name": "Vinamilk", "seed": 0 },
-    "VIC": { "name": "Vingroup", "seed": 1 },
-    "HPG": { "name": "Hòa Phát", "seed": 2 },
-    "FPT": { "name": "FPT Corp", "seed": 3 },
-    "MWG": { "name": "Mobile World", "seed": 4 },
-    "VHM": { "name": "Vinhomes", "seed": 5 },
-    "TCB": { "name": "Techcombank", "seed": 6 },
-    "MBB": { "name": "MB Bank", "seed": 7 }
+    "ACB": {
+      "name": "Ngân hàng TMCP Á Châu"
+    },
+    "BID": {
+      "name": "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam"
+    },
+    "BSR": {
+      "name": "CTCP - Tổng Công ty Lọc hóa dầu Việt Nam"
+    },
+    "CTG": {
+      "name": "Ngân hàng TMCP Công Thương Việt Nam"
+    },
+    "FPT": {
+      "name": "FPT Corp",
+      "seed": 3
+    },
+    "GAS": {
+      "name": "Tổng Công ty Khí Việt Nam - CTCP"
+    },
+    "GVR": {
+      "name": "Tập đoàn Công nghiệp Cao su Việt Nam - CTCP"
+    },
+    "HDB": {
+      "name": "Ngân hàng TMCP Phát triển Thành phố Hồ Chí Minh"
+    },
+    "HPG": {
+      "name": "Hòa Phát",
+      "seed": 2
+    },
+    "LPB": {
+      "name": "Ngân hàng TMCP Lộc Phát Việt Nam"
+    },
+    "MBB": {
+      "name": "MB Bank",
+      "seed": 7
+    },
+    "MSN": {
+      "name": "CTCP Tập đoàn Masan"
+    },
+    "MWG": {
+      "name": "Mobile World",
+      "seed": 4
+    },
+    "PLX": {
+      "name": "Tập đoàn Xăng Dầu Việt Nam"
+    },
+    "SAB": {
+      "name": "Tổng Công ty cổ phần Bia - Rượu - Nước giải khát Sài Gòn"
+    },
+    "SHB": {
+      "name": "Ngân hàng TMCP Sài Gòn - Hà Nội"
+    },
+    "SSB": {
+      "name": "Ngân hàng TMCP Đông Nam Á"
+    },
+    "SSI": {
+      "name": "CTCP Chứng khoán SSI"
+    },
+    "STB": {
+      "name": "Ngân hàng TMCP Sài Gòn Tài Lộc"
+    },
+    "TCB": {
+      "name": "Techcombank",
+      "seed": 6
+    },
+    "TPB": {
+      "name": "Ngân hàng TMCP Tiên Phong"
+    },
+    "VCB": {
+      "name": "Ngân hàng TMCP Ngoại thương Việt Nam"
+    },
+    "VHM": {
+      "name": "Vinhomes",
+      "seed": 5
+    },
+    "VIB": {
+      "name": "Ngân hàng TMCP Quốc tế Việt Nam"
+    },
+    "VIC": {
+      "name": "Vingroup",
+      "seed": 1
+    },
+    "VJC": {
+      "name": "CTCP Hàng không Vietjet"
+    },
+    "VNM": {
+      "name": "Vinamilk",
+      "seed": 0
+    },
+    "VPB": {
+      "name": "Ngân hàng TMCP Việt Nam Thịnh Vượng"
+    },
+    "VPL": {
+      "name": "CTCP Vinpearl"
+    },
+    "VRE": {
+      "name": "CTCP Vincom Retail"
+    }
   },
   "glossary": [
     {

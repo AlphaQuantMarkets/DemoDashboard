@@ -1,43 +1,52 @@
 /* ─── ALPHAQUANT · app.js ────────────────────────────────────────────── */
 
+async function loadOneStock(ticker) {
+  const response = await fetch(`${API_BASE_URL}/api/stocks/${ticker}/history`);
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || `Failed to load ${ticker} (HTTP ${response.status})`);
+  }
+
+  const { history } = await response.json();
+
+  return (history || []).map(row => ({
+    date: new Date(`${row.date}T00:00:00Z`),
+    open: row.open,
+    high: row.high,
+    low: row.low,
+    close: row.close,
+    volume: row.volume,
+  }));
+}
+
+// Loads each ticker independently (Promise.allSettled, not Promise.all) so a
+// single failing/missing symbol can't blank out the rest of the dashboard —
+// it just falls back to an empty series for that one ticker.
 async function loadStockData(tickers) {
   console.log("📥 Loading real data from backend API for tickers:", tickers);
 
-  try {
-    const dataByTicker = {};
+  const results = await Promise.allSettled(tickers.map(loadOneStock));
 
-    await Promise.all(tickers.map(async (ticker) => {
-      const response = await fetch(`${API_BASE_URL}/api/stocks/${ticker}/history`);
+  const dataByTicker = {};
+  results.forEach((result, index) => {
+    const ticker = tickers[index];
 
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || `Failed to load ${ticker} (HTTP ${response.status})`);
-      }
-
-      const { history } = await response.json();
-
-      dataByTicker[ticker] = (history || []).map(row => ({
-        date: new Date(`${row.date}T00:00:00Z`),
-        open: row.open,
-        high: row.high,
-        low: row.low,
-        close: row.close,
-        volume: row.volume,
-      }));
-
-      console.log(`  ${ticker}: ${dataByTicker[ticker].length} days`);
-    }));
-
-    if (!tickers.some(ticker => dataByTicker[ticker].length > 0)) {
-      console.warn('⚠️ No data found for symbols:', tickers);
+    if (result.status === 'fulfilled') {
+      dataByTicker[ticker] = result.value;
+      console.log(`  ${ticker}: ${result.value.length} days`);
+    } else {
+      dataByTicker[ticker] = [];
+      console.warn(`⚠️ ${ticker}: failed to load (${result.reason?.message || result.reason}), skipping`);
     }
+  });
 
-    console.log(`✅ Real data loaded for ${tickers.length} tickers`);
-    return dataByTicker;
-  } catch (error) {
-    console.error('❌ Failed to load stock data:', error.message);
-    throw error;
+  if (!tickers.some(ticker => dataByTicker[ticker].length > 0)) {
+    console.warn('⚠️ No data found for symbols:', tickers);
   }
+
+  console.log(`✅ Real data loaded for ${tickers.length} tickers`);
+  return dataByTicker;
 }
 function computeBeta(rows, benchmarkRows) {
   if (!benchmarkRows || benchmarkRows.length < 2 || rows.length < 2) return null;
@@ -1322,7 +1331,8 @@ async function init() {
   await loadProductGuides();
 
   // ========== REAL DATA FROM BACKEND API ==========
-  const tickers = ['FPT', 'HPG', 'VNM', 'VNINDEX']; // Only 3 symbols, plus the VN-Index benchmark used for Beta
+  // Every ticker listed in stocks.json, plus the VN-Index benchmark used for Beta.
+  const tickers = [...Object.keys(STATE.stocks), 'VNINDEX'];
   console.log('🔄 Initializing with real data from the backend API...');
 
   try {
