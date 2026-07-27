@@ -307,3 +307,42 @@ AlphaQuant tạo ra giá trị bằng cách:
 AlphaQuant là nền tảng phục vụ mục đích giáo dục và nghiên cứu.
 
 Mọi nội dung do AI tạo ra chỉ nhằm giải thích dữ liệu tài chính và hỗ trợ học tập. Hệ thống **không đưa ra khuyến nghị mua, bán hoặc nắm giữ bất kỳ loại chứng khoán nào**.
+
+---
+
+# Getting Started
+
+This project has two parts: a Node.js/Express backend API (`backend/`) and a static HTML/CSS/JS frontend (`frontend/`, `ai-tutor/`) with no build step, served by that same backend. For full details, troubleshooting, and how the database setup works, see **[docs/setup.md](docs/setup.md)**.
+
+## Prerequisites
+
+- Node.js >= 18 and npm
+- PostgreSQL (any recent version) — for your own local `users` table
+- Python 3.11 — only needed if you plan to run the stock-price sync script yourself, not to run the app
+
+## Quick start
+
+```bash
+git clone https://github.com/AlphaQuantMarkets/DemoDashboard.git
+cd DemoDashboard/backend
+npm install
+cp .env.example .env
+```
+
+Edit `backend/.env` and set `DATABASE_URL`, `JWT_SECRET`, and `GEMINI_API_KEY` (see `.env.example` for what each one does).
+
+Create the `users` table:
+```bash
+npm run migrate
+```
+
+Start the backend (this also serves the frontend):
+```bash
+npm run dev
+```
+
+Open the app: **http://localhost:3000/frontend/index.html**
+
+Check it's healthy: `curl http://localhost:3000/api/health`
+
+See [docs/setup.md](docs/setup.md) for environment variable reference, the database architecture (two separate databases are involved), API testing examples, and troubleshooting.

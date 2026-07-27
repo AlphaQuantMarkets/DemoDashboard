@@ -104,8 +104,58 @@ function loadState() {
   }
 }
 
+// Always mirrors to localStorage; also pushes to the backend for users
+// already logged in via the main app (shares the same authToken), so
+// progress survives a localStorage clear / new device.
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  syncProgressToBackend();
+}
+
+function syncProgressToBackend() {
+  if (!window.getCurrentUser?.()) return;
+
+  fetch(`${API_BASE_URL}/api/user-state/learning-progress`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    },
+    body: JSON.stringify({ progress: state })
+  }).catch(() => {
+    console.warn('⚠️ Could not sync learning progress to the server; kept locally.');
+  });
+}
+
+// Pulls the logged-in user's saved progress from the backend, if any, and
+// re-renders. Logged-out users (or the Learn module's own stub login) keep
+// the localStorage-only behavior above.
+async function syncProgressFromBackend() {
+  if (!window.getCurrentUser?.()) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/user-state/learning-progress`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+    });
+    if (!response.ok) return;
+
+    const { progress } = await response.json();
+
+    if (progress && typeof progress === 'object') {
+      state = {
+        ...DEFAULT_STATE,
+        ...progress,
+        holdings: { ...DEFAULT_STATE.holdings, ...(progress.holdings || {}) }
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      render();
+    } else {
+      // No progress saved on the server yet — seed it with the local state.
+      syncProgressToBackend();
+    }
+  } catch {
+    // Offline/backend unreachable: keep using the local state.
+  }
 }
 
 function formatMoney(value) {
@@ -539,6 +589,7 @@ function capitalize(value) {
 function init() {
   initEvents();
   render();
+  syncProgressFromBackend();
   updateClock();
   setInterval(updateClock, 1000);
 

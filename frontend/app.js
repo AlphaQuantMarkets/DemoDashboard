@@ -1,107 +1,86 @@
 /* ─── ALPHAQUANT · app.js ────────────────────────────────────────────── */
 
-/* ═══════════════════════════════════════════════════════════════════════
-   1. SEEDED PRNG
-   ═══════════════════════════════════════════════════════════════════════ */
-class SeededRandom {
-  constructor(seed) { this.state = seed >>> 0; }
-  next() {
-    this.state = (Math.imul(1664525, this.state) + 1013904223) >>> 0;
-    return this.state / 4294967296;
+async function loadOneStock(ticker) {
+  const response = await fetch(`${API_BASE_URL}/api/stocks/${ticker}/history`);
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || `Failed to load ${ticker} (HTTP ${response.status})`);
   }
-  normal(mean = 0, std = 1) {
-    const u1 = Math.max(1e-10, this.next());
-    const u2 = this.next();
-    const z  = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-    return mean + std * z;
-  }
-  uniform(lo, hi) { return lo + this.next() * (hi - lo); }
-  randInt(lo, hi)  { return Math.floor(lo + this.next() * (hi - lo)); }
+
+  const { history } = await response.json();
+
+  return (history || []).map(row => ({
+    date: new Date(`${row.date}T00:00:00Z`),
+    open: row.open,
+    high: row.high,
+    low: row.low,
+    close: row.close,
+    volume: row.volume,
+  }));
 }
 
-function charSum(s) { return [...s].reduce((a, c) => a + c.charCodeAt(0), 0); }
-
-/* ═══════════════════════════════════════════════════════════════════════
-   2. DATA GENERATION
-   ═══════════════════════════════════════════════════════════════════════ */
+// Loads each ticker independently (Promise.allSettled, not Promise.all) so a
+// single failing/missing symbol can't blank out the rest of the dashboard —
+// it just falls back to an empty series for that one ticker.
 async function loadStockData(tickers) {
-  console.log("📥 Loading real data from Supabase for tickers:", tickers);
-  
-  if (!window.supabaseClient) {
-    throw new Error('Supabase client is unavailable');
-  }
+  console.log("📥 Loading real data from backend API for tickers:", tickers);
 
-  try {
-    const rows = [];
-    const pageSize = 1000;
-    
-    for (let from = 0; ; from += pageSize) {
-      const { data, error } = await window.supabaseClient
-        .from('stock_prices')
-        .select('symbol, trading_date, open, high, low, close, volume')
-        .in('symbol', tickers)
-        .order('trading_date', { ascending: true })
-        .range(from, from + pageSize - 1);
+  const results = await Promise.allSettled(tickers.map(loadOneStock));
 
-      if (error) {
-        console.error('❌ Supabase select error:', error);
-        throw error;
-      }
-      
-      if (!data || data.length === 0) {
-        if (from === 0) {
-          console.warn('⚠️ No data found for symbols:', tickers);
-          console.warn('Make sure to run: python backend/update_stock.py');
-        }
-        break;
-      }
+  const dataByTicker = {};
+  results.forEach((result, index) => {
+    const ticker = tickers[index];
 
-      rows.push(...data);
-      console.log(`  Fetched batch ${Math.floor(from/pageSize) + 1}: ${data.length} rows`);
-      
-      if (data.length < pageSize) break;
-    }
-
-    console.log(`✅ Total: ${rows.length} records from Supabase`);
-
-    // Group by ticker
-    const dataByTicker = {};
-    for (const ticker of tickers) {
+    if (result.status === 'fulfilled') {
+      dataByTicker[ticker] = result.value;
+      console.log(`  ${ticker}: ${result.value.length} days`);
+    } else {
       dataByTicker[ticker] = [];
+      console.warn(`⚠️ ${ticker}: failed to load (${result.reason?.message || result.reason}), skipping`);
     }
+  });
 
-    for (const row of rows) {
-      if (dataByTicker[row.symbol]) {
-        dataByTicker[row.symbol].push({
-          date: new Date(`${row.trading_date}T00:00:00Z`),
-          open: Number(row.open),
-          high: Number(row.high),
-          low: Number(row.low),
-          close: Number(row.close),
-          volume: Number(row.volume),
-        });
-      }
-    }
-
-    // Limit to last 500 days per ticker & sort by date
-    for (const ticker of tickers) {
-      let data = dataByTicker[ticker];
-      if (data.length > 500) {
-        data = data.slice(-500);
-      }
-      // Ensure sorted ascending by date
-      data.sort((a, b) => a.date - b.date);
-      dataByTicker[ticker] = data;
-      console.log(`  ${ticker}: ${data.length} days (${data[0]?.date.toDateString()} → ${data[data.length-1]?.date.toDateString()})`);
-    }
-
-    return dataByTicker;
-  } catch (error) {
-    console.error('❌ Failed to load stock data:', error.message);
-    throw error;
+  if (!tickers.some(ticker => dataByTicker[ticker].length > 0)) {
+    console.warn('⚠️ No data found for symbols:', tickers);
   }
+
+  console.log(`✅ Real data loaded for ${tickers.length} tickers`);
+  return dataByTicker;
 }
-function computeMetrics(rows) {
+function computeBeta(rows, benchmarkRows) {
+  if (!benchmarkRows || benchmarkRows.length < 2 || rows.length < 2) return null;
+
+  const benchCloseByDate = new Map(benchmarkRows.map(r => [r.date.getTime(), r.close]));
+
+  const stockReturns = [];
+  const benchReturns = [];
+  for (let i = 1; i < rows.length; i++) {
+    const prevBenchClose = benchCloseByDate.get(rows[i - 1].date.getTime());
+    const currBenchClose = benchCloseByDate.get(rows[i].date.getTime());
+    if (prevBenchClose == null || currBenchClose == null) continue;
+
+    stockReturns.push((rows[i].close - rows[i - 1].close) / rows[i - 1].close);
+    benchReturns.push((currBenchClose - prevBenchClose) / prevBenchClose);
+  }
+
+  if (stockReturns.length < 2) return null;
+
+  const stockMean = stockReturns.reduce((a, v) => a + v, 0) / stockReturns.length;
+  const benchMean = benchReturns.reduce((a, v) => a + v, 0) / benchReturns.length;
+
+  let covariance = 0, benchVariance = 0;
+  for (let i = 0; i < stockReturns.length; i++) {
+    covariance    += (stockReturns[i] - stockMean) * (benchReturns[i] - benchMean);
+    benchVariance += (benchReturns[i] - benchMean) ** 2;
+  }
+  covariance    /= stockReturns.length;
+  benchVariance /= stockReturns.length;
+
+  return benchVariance > 0 ? covariance / benchVariance : null;
+}
+
+function computeMetrics(rows, benchmarkRows) {
   const closes  = rows.map(r => r.close);
   const rets    = closes.slice(1).map((c, i) => (c - closes[i]) / closes[i]);
   const mean    = rets.length ? rets.reduce((a, v) => a + v, 0) / rets.length : 0;
@@ -109,8 +88,7 @@ function computeMetrics(rows) {
   const std     = Math.sqrt(variance);
   const volAnn  = std * Math.sqrt(252);
   const sharpe  = (mean * 252) / (std * Math.sqrt(252) + 1e-9);
-  const betaRng = new SeededRandom(charSum(rows[0]?.date?.toString() ?? '0'));
-  const beta    = betaRng.uniform(0.6, 1.6);
+  const beta    = computeBeta(rows, benchmarkRows);
   let cumMax = closes[0], maxDD = 0;
   for (const c of closes) {
     if (c > cumMax) cumMax = c;
@@ -120,16 +98,145 @@ function computeMetrics(rows) {
   const current   = closes.at(-1);
   const prev      = closes.at(-2) ?? current;
   const changePct = ((current - prev) / prev) * 100;
+  const periodChangePct = closes[0] ? ((current - closes[0]) / closes[0]) * 100 : 0;
+  const trend = periodChangePct > 5 ? 'up' : periodChangePct < -5 ? 'down' : 'flat';
   let riskLevel, riskClass;
   if      (volAnn < 0.20) { riskLevel = 'THẤP / LOW';          riskClass = 'low'; }
   else if (volAnn < 0.40) { riskLevel = 'TRUNG BÌNH / MEDIUM'; riskClass = 'medium'; }
   else                    { riskLevel = 'CAO / HIGH';           riskClass = 'high'; }
-  return { volAnn, sharpe, beta, maxDD, current, prev, changePct, riskLevel, riskClass };
+  return { volAnn, sharpe, beta, maxDD, current, prev, changePct, trend, riskLevel, riskClass };
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
    3. STATE
    ═══════════════════════════════════════════════════════════════════════ */
+function initGuideOverlay() {
+
+  // Nếu guide metrics đã chạy xong thì không chạy lại
+  if (window.__metricsGuideFinished) return;
+
+}
+
+let _chatGuideShown = false;
+function initChatbotGuide() {
+  if (_chatGuideShown) return;
+  _chatGuideShown = true;
+  const fab = document.getElementById('chatFab');
+  if (!fab) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'chatGuideOverlay';
+  overlay.className = 'stock-guide-overlay';
+  overlay.innerHTML = `
+    <div id="chatGuideSpotlight" class="stock-guide-spotlight"></div>
+    <div id="chatGuideTooltip" class="stock-guide-tooltip chat-guide-tooltip">
+      <div class="chat-guide-arrow"></div>
+      <div class="stock-guide-badge" style="color:#7ec8e3;">🤖 Trợ lý AI của bạn</div>
+      <p class="stock-guide-desc">Đây là <strong>AlphaQuant AI</strong> — trợ lý giúp bạn hiểu các chỉ số, thuật ngữ và phân tích rủi ro chứng khoán dễ dàng hơn.</p>
+      <p class="stock-guide-hint">Nhấn vào icon để thử ngay · ESC để bỏ qua</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const spotlight = overlay.querySelector('#chatGuideSpotlight');
+  const tooltip   = overlay.querySelector('#chatGuideTooltip');
+
+  function positionElements() {
+    const r  = fab.getBoundingClientRect();
+    const pad = 18;
+    const cx  = r.left + r.width  / 2;
+    const cy  = r.top  + r.height / 2;
+
+    // Spotlight tròn — tâm trùng FAB, pad đều 4 phía
+    const size = Math.max(r.width, r.height) + pad * 2;
+    spotlight.style.width        = size + 'px';
+    spotlight.style.height       = size + 'px';
+    spotlight.style.left         = (cx - size / 2) + 'px';
+    spotlight.style.top          = (cy - size / 2) + 'px';
+    spotlight.style.borderRadius = '50%';
+    spotlight.style.borderColor  = '#7ec8e3';
+    spotlight.style.boxShadow    = '0 0 0 9999px rgba(6,11,20,0.85), 0 0 0 3px #7ec8e380';
+
+    // Tooltip — đo thực tế chiều cao sau khi render
+    const tooltipW = 230;
+    tooltip.style.width     = tooltipW + 'px';
+    tooltip.style.left      = '-9999px'; // render ngoài màn để đo
+    tooltip.style.top       = '-9999px';
+    tooltip.style.visibility = 'hidden';
+
+
+    // Dùng requestAnimationFrame để đo sau khi browser layout
+    requestAnimationFrame(() => {
+      const tooltipH = tooltip.offsetHeight;
+      let tLeft = r.left - tooltipW - 20;
+      let tTop  = cy - tooltipH / 2;
+      const arrow = tooltip.querySelector('.chat-guide-arrow');
+
+      if (tLeft < 10) {
+        // Không đủ chỗ bên trái → đặt tooltip phía TRÊN FAB
+        tLeft = Math.max(10, Math.min(r.right - tooltipW, window.innerWidth - tooltipW - 10));
+        tTop  = Math.max(10, r.top - tooltipH - 16);
+
+        // Đổi mũi tên trỏ XUỐNG (dưới tooltip)
+        if (arrow) {
+          arrow.style.top         = 'auto';
+          arrow.style.bottom      = '-9px';
+          arrow.style.right       = 'auto';
+          arrow.style.left        = (r.left + r.width / 2 - tLeft - 9) + 'px';
+          arrow.style.transform   = 'none';
+          arrow.style.borderLeft  = '9px solid transparent';
+          arrow.style.borderRight = '9px solid transparent';
+          arrow.style.borderTop   = '10px solid #7ec8e355';
+          arrow.style.borderBottom = 'none';
+        }
+      } else {
+        // Đủ chỗ bên trái → layout mặc định, mũi tên trỏ sang phải
+        tLeft = Math.max(10, tLeft);
+        tTop  = Math.max(10, Math.min(tTop, window.innerHeight - tooltipH - 54));
+        if (arrow) {
+          arrow.style.top         = Math.max(16, cy - tTop - 8) + 'px';
+          arrow.style.bottom      = 'auto';
+          arrow.style.right       = '-10px';
+          arrow.style.left        = 'auto';
+          arrow.style.transform   = 'translateY(-50%)';
+          arrow.style.borderLeft  = '10px solid #7ec8e355';
+          arrow.style.borderRight = 'none';
+          arrow.style.borderTop   = '8px solid transparent';
+          arrow.style.borderBottom = '8px solid transparent';
+        }
+      }
+
+      tooltip.style.left       = tLeft + 'px';
+      tooltip.style.top        = tTop  + 'px';
+      tooltip.style.visibility = 'visible';
+    });
+  }
+
+  // Scroll về đầu trang trước khi lock
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  positionElements();
+  window.addEventListener('resize', positionElements);
+  document.body.style.overflow = 'hidden';
+
+  function close() {
+    overlay.classList.add('hidden');
+    window.removeEventListener('resize', positionElements);
+    document.body.style.overflow = '';
+  }
+
+  overlay.style.pointerEvents = 'auto';
+  spotlight.style.pointerEvents = 'auto';
+  spotlight.style.cursor = 'pointer';
+  spotlight.addEventListener('click', () => { close(); fab.click(); });
+
+  overlay.addEventListener('click', e => {
+    if (!spotlight.contains(e.target) && !tooltip.contains(e.target)) close();
+  });
+
+  document.addEventListener('keydown', function onEsc(e) {
+    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); }
+  });
+}
 
 function initMetricsGuide() {
   if (window.__metricsGuideFinished) return;
@@ -380,6 +487,20 @@ function initMetricsGuide() {
   window.addEventListener('resize', onResize);
 }
 
+const WATCHLIST_STORAGE_KEY = 'alphaquant_watchlist_v1';
+const DEFAULT_WATCHLIST = ['FPT', 'HPG'];
+
+function loadWatchlistFromStorage() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(WATCHLIST_STORAGE_KEY));
+    return Array.isArray(saved) && saved.every(t => typeof t === 'string')
+      ? saved
+      : [...DEFAULT_WATCHLIST];
+  } catch {
+    return [...DEFAULT_WATCHLIST];
+  }
+}
+
 const STATE = {
   stocks:     {},
   glossary:   [],
@@ -388,13 +509,34 @@ const STATE = {
   period:     180,
   compareSet: new Set(),
   allData:    {},
-  watchlist:  ['FPT', 'HPG'],   // default watchlist
+  watchlist:  loadWatchlistFromStorage(),
   replay:     {
     day: 365,
     timer: null,
     speedMs: 500,
   },
+  aiAssessment: null,   // last computeRiskAssessment() result, cached for the "Explain Risk with AI" button
 };
+
+const TUTOR_STOCK_CONTEXT_KEY = 'alphaquant_tutor_stock_context_v1';
+
+function syncTutorStockContext(metrics) {
+  const stock = STATE.stocks[STATE.selected];
+  if (!stock || !metrics) return;
+
+  const stockContext = {
+    symbol: STATE.selected,
+    companyName: stock.name,
+    currentPrice: Number(metrics.current.toFixed(2)),
+    beta: metrics.beta != null ? Number(metrics.beta.toFixed(2)) : null,
+    volatility: Number((metrics.volAnn * 100).toFixed(2)),
+    sharpe: Number(metrics.sharpe.toFixed(2)),
+    maxDrawdown: Number((metrics.maxDD * 100).toFixed(2)),
+    riskLevel: metrics.riskLevel
+  };
+
+  localStorage.setItem(TUTOR_STOCK_CONTEXT_KEY, JSON.stringify(stockContext));
+}
 
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -441,6 +583,51 @@ function initSearch() {
 /* ═══════════════════════════════════════════════════════════════════════
    6. WATCHLIST
    ═══════════════════════════════════════════════════════════════════════ */
+// Always mirrors to localStorage; also pushes to the backend for logged-in
+// users so the watchlist survives a localStorage clear / new device.
+function saveWatchlist() {
+  localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(STATE.watchlist));
+
+  if (!getCurrentUser()) return;
+
+  fetch(`${API_BASE_URL}/api/user-state/watchlist`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    },
+    body: JSON.stringify({ tickers: STATE.watchlist })
+  }).catch(() => {
+    console.warn('⚠️ Could not sync watchlist to the server; kept locally.');
+  });
+}
+
+// Pulls the logged-in user's saved watchlist from the backend, if any, and
+// re-renders. Logged-out users keep the localStorage-only behavior above.
+async function syncWatchlistFromBackend() {
+  if (!getCurrentUser()) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/user-state/watchlist`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+    });
+    if (!response.ok) return;
+
+    const { tickers } = await response.json();
+
+    if (Array.isArray(tickers)) {
+      STATE.watchlist = tickers;
+      localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(tickers));
+      renderWatchlist();
+    } else {
+      // No watchlist saved on the server yet — seed it with the local one.
+      saveWatchlist();
+    }
+  } catch {
+    // Offline/backend unreachable: keep using the local watchlist.
+  }
+}
+
 function renderWatchlist() {
   const container = document.getElementById('watchlistItems');
   container.innerHTML = '';
@@ -453,7 +640,7 @@ function renderWatchlist() {
     }
 
     const rows = STATE.allData[ticker];
-    const m    = computeMetrics(rows.slice(-30));
+    const m    = computeMetrics(rows.slice(-30), STATE.allData.VNINDEX);
     const price = rows[rows.length - 1].close.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     const up    = m.changePct >= 0;
 
@@ -485,6 +672,7 @@ function renderWatchlist() {
     item.querySelector('.watchlist-remove').addEventListener('click', e => {
       e.stopPropagation();
       STATE.watchlist = STATE.watchlist.filter(t => t !== ticker);
+      saveWatchlist();
       renderWatchlist();
     });
     
@@ -497,6 +685,7 @@ function initWatchlist() {
     const ticker = STATE.selected;
     if (!STATE.watchlist.includes(ticker)) {
       STATE.watchlist.push(ticker);
+      saveWatchlist();
       renderWatchlist();
     }
   });
@@ -549,20 +738,39 @@ function resizeCharts(ids) {
    9. TABS
    ═══════════════════════════════════════════════════════════════════════ */
 function initTabs() {
+  function activateTab(tabId) {
+    const button = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    if (!button) return;
+
+    document.querySelectorAll('.tab-btn').forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+    button.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+
+    if (tabId === 'tab6') {
+      requestAnimationFrame(() => {
+        renderReplay();
+        resizeCharts(['simChartCandle', 'simChartVolume', 'simChartLine']);
+      });
+    }
+  }
+
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById(btn.dataset.tab).classList.add('active');
-      if (btn.dataset.tab === 'tab6') {
-        requestAnimationFrame(() => {
-          renderReplay();
-          resizeCharts(['simChartCandle', 'simChartVolume', 'simChartLine']);
-        });
-      }
+      activateTab(btn.dataset.tab);
     });
   });
+
+  document.querySelectorAll('[data-dashboard-tab]').forEach(link => {
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      activateTab(link.dataset.dashboardTab);
+      history.replaceState(null, '', link.getAttribute('href'));
+    });
+  });
+
+  const tabFromHash = { '#compare': 'tab2', '#risk': 'tab1' }[window.location.hash];
+  if (tabFromHash) activateTab(tabFromHash);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -582,15 +790,22 @@ function initAIAnalysis() {
   select.value = STATE.selected;
 
   select.addEventListener('change', renderAIAnalysis);
-  if (runBtn) runBtn.addEventListener('click', renderAIAnalysis);
-  document.querySelectorAll('.ai-segmented button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.ai-segmented button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderAIAnalysis();
-    });
-  });
+  if (runBtn) runBtn.addEventListener('click', explainRiskWithAI);
   renderAIAnalysis();
+}
+
+function computeRiskAssessment(ticker) {
+  const info = STATE.stocks[ticker];
+  const metrics = computeMetrics(STATE.allData[ticker].slice(-STATE.period), STATE.allData.VNINDEX);
+  const volPct = metrics.volAnn * 100;
+  const ddPct = Math.abs(metrics.maxDD * 100);
+  const riskScore = Math.min(99, Math.max(1, Math.round(volPct * 1.25 + ddPct * 0.9 + (metrics.beta ?? 0) * 12)));
+  const riskLevelKey = riskScore >= 70 ? 'high' : riskScore >= 45 ? 'medium' : 'low';
+  const tone = { high: 'cao', medium: 'trung bình', low: 'thấp' }[riskLevelKey];
+  const betaText = metrics.beta != null ? metrics.beta.toFixed(2) : '—';
+  const trendLabel = { up: 'Đang tăng', down: 'Đang giảm', flat: 'Đi ngang' }[metrics.trend] ?? '—';
+
+  return { ticker, info, metrics, volPct, ddPct, riskScore, riskLevelKey, tone, betaText, trendLabel };
 }
 
 function renderAIAnalysis() {
@@ -598,37 +813,72 @@ function renderAIAnalysis() {
   if (!select || !STATE.allData[select.value]) return;
 
   const ticker = select.value;
-  const info = STATE.stocks[ticker];
-  const metrics = computeMetrics(STATE.allData[ticker].slice(-STATE.period));
-  const volPct = metrics.volAnn * 100;
-  const ddPct = Math.abs(metrics.maxDD * 100);
-  const riskScore = Math.min(99, Math.max(1, Math.round(volPct * 1.25 + ddPct * 0.9 + metrics.beta * 12)));
-  const tone = riskScore >= 70 ? 'cao' : riskScore >= 45 ? 'trung bình' : 'thấp';
-  const action = riskScore >= 70
-    ? 'nên ưu tiên quản trị vị thế và chờ vùng giá ổn định hơn.'
-    : riskScore >= 45
-      ? 'phù hợp để theo dõi thêm, đặc biệt khi kết hợp với điểm mua rõ ràng.'
-      : 'đang có hồ sơ rủi ro tương đối dễ kiểm soát trong giai đoạn quan sát.';
+  const assessment = computeRiskAssessment(ticker);
+  STATE.aiAssessment = assessment;
+
+  const { info, metrics, volPct, ddPct, riskScore, tone, betaText, trendLabel } = assessment;
 
   setText('aiResultTitle', `${ticker} — ${info.name}`);
   setText('aiRiskScore', riskScore);
-  setText('aiRiskHeadline', `Mức rủi ro mô phỏng: ${tone.toUpperCase()}`);
-  setText('aiRiskSummary', `AI demo đánh giá ${ticker} có rủi ro ${tone} trong khung ${STATE.period} ngày. Với volatility ${volPct.toFixed(1)}%, beta ${metrics.beta.toFixed(2)} và drawdown tối đa ${(metrics.maxDD * 100).toFixed(1)}%, mã này ${action}`);
+  setText('aiRiskHeadline', `Mức độ rủi ro: ${tone.toUpperCase()}`);
+  setText('aiRiskSummary', 'Nhấn "Giải thích rủi ro bằng AI" để xem giải thích dễ hiểu về các chỉ số bên dưới.');
 
   setText('aiVolValue', `${volPct.toFixed(1)}%`);
   setText('aiVolText', volPct > 40 ? 'Biến động cao, cần giới hạn tỷ trọng và đặt ngưỡng cắt lỗ rõ.' : volPct > 20 ? 'Biến động ở mức vừa, phù hợp theo dõi cùng xu hướng giá.' : 'Biến động thấp, phù hợp khẩu vị thận trọng hơn.');
   setText('aiSharpeValue', metrics.sharpe.toFixed(2));
-  setText('aiSharpeText', metrics.sharpe > 1 ? 'Hiệu suất điều chỉnh rủi ro đang tích cực trong dữ liệu demo.' : 'Hiệu suất chưa thật nổi bật so với mức biến động.');
+  setText('aiSharpeText', metrics.sharpe > 1 ? 'Hiệu suất điều chỉnh rủi ro đang tích cực.' : 'Hiệu suất chưa thật nổi bật so với mức biến động.');
   setText('aiDrawdownValue', `${(metrics.maxDD * 100).toFixed(1)}%`);
   setText('aiDrawdownText', ddPct > 15 ? 'Drawdown sâu, nên kiểm tra vùng hỗ trợ và quản trị lỗ.' : 'Drawdown còn trong vùng dễ kiểm soát hơn.');
+  setText('aiBetaValue', betaText);
+  setText('aiBetaText', metrics.beta != null ? (metrics.beta > 1 ? 'Biến động mạnh hơn thị trường chung.' : 'Biến động ít hơn thị trường chung.') : 'Chưa có đủ dữ liệu so sánh.');
+  setText('aiTrendValue', trendLabel);
+  setText('aiTrendText', metrics.trend === 'up' ? 'Giá đang có xu hướng tăng trong giai đoạn này.' : metrics.trend === 'down' ? 'Giá đang có xu hướng giảm trong giai đoạn này.' : 'Giá tương đối ổn định trong giai đoạn này.');
 
   const list = document.getElementById('aiRecommendationList');
   if (list) {
     list.innerHTML = `
-      <li>Không dùng kết quả demo này như tín hiệu mua bán trực tiếp.</li>
-      <li>Theo dõi thêm xu hướng giá, khối lượng và biến động 20 phiên.</li>
-      <li>Nếu đưa vào danh mục, nên đặt trước tỷ trọng tối đa và điểm thoát rủi ro.</li>
+      <li>Đa dạng hóa danh mục thay vì chỉ giữ một mã cổ phiếu.</li>
+      <li>Giảm tỷ trọng tập trung vào một mã duy nhất.</li>
+      <li>Tìm hiểu thêm kiến thức đầu tư trước khi quyết định.</li>
+      <li>Không nên dồn toàn bộ vốn vào một cổ phiếu duy nhất.</li>
     `;
+  }
+}
+
+async function explainRiskWithAI() {
+  const assessment = STATE.aiAssessment;
+  const btn = document.getElementById('aiRunBtn');
+  if (!assessment || !btn) return;
+
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Đang phân tích...';
+  setText('aiRiskSummary', '🤖 Đang tạo giải thích...');
+
+  try {
+    const { ticker, info, metrics, riskScore, riskLevelKey } = assessment;
+    const explanation = await window.RiskApi.explainRisk({
+      symbol: ticker,
+      companyName: info.name,
+      riskScore,
+      riskLevel: riskLevelKey,
+      metrics: {
+        volPct: Number((metrics.volAnn * 100).toFixed(2)),
+        sharpe: Number(metrics.sharpe.toFixed(2)),
+        maxDDPct: Number((metrics.maxDD * 100).toFixed(2)),
+        beta: metrics.beta != null ? Number(metrics.beta.toFixed(2)) : null,
+        trend: metrics.trend ?? null
+      }
+    });
+
+    setText('aiRiskSummary', explanation);
+
+  } catch (error) {
+    console.error('AI Risk Explanation error:', error);
+    setText('aiRiskSummary', '⚠️ Không thể tạo giải thích AI lúc này. Vui lòng thử lại.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
   }
 }
 
@@ -657,7 +907,8 @@ function render() {
     return;
   }
 
-  const m    = computeMetrics(slicedRows);
+  const m    = computeMetrics(slicedRows, STATE.allData.VNINDEX);
+  syncTutorStockContext(m);
   renderMetrics(m);
   renderRiskBadge(m);
   renderCandlestick(slicedRows);
@@ -869,7 +1120,7 @@ function renderReplay() {
   }
   if (label) label.textContent = `Day ${STATE.replay.day} / ${maxDay}`;
 
-  const m = computeMetrics(rows);
+  const m = computeMetrics(rows, STATE.allData.VNINDEX);
   renderMetrics(m, 'sim', {
     volSub: 'Annualized',
     sharpeSub: 'Replay realtime',
@@ -920,7 +1171,7 @@ function renderComparison() {
   body.innerHTML = '';
   const rowData = [];
   for (const t of tickers) {
-    const m = computeMetrics(STATE.allData[t].slice(-STATE.period));
+    const m = computeMetrics(STATE.allData[t].slice(-STATE.period), STATE.allData.VNINDEX);
     rowData.push({ t, m });
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -929,7 +1180,7 @@ function renderComparison() {
       <td>${m.current.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
       <td>${(m.volAnn * 100).toFixed(1)}%</td>
       <td>${m.sharpe.toFixed(2)}</td>
-      <td>${m.beta.toFixed(2)}</td>
+      <td>${m.beta != null ? m.beta.toFixed(2) : '—'}</td>
       <td style="color:var(--red)">${(m.maxDD * 100).toFixed(1)}%</td>
       <td><span class="risk-badge risk-${m.riskClass}" style="font-size:.68rem;padding:2px 8px">${m.riskLevel}</span></td>
     `;
@@ -993,16 +1244,15 @@ function initProductGuidePanel() {
   panel.className = 'product-guide-panel';
   panel.setAttribute('aria-live', 'polite');
   panel.innerHTML = `
-    <div class="product-guide-kicker">Gợi ý nhanh · AlphaQuant</div>
-    <div class="product-guide-title"></div>
+    <div class="product-guide-kicker">Tính năng sản phẩm</div>
 
     <div class="product-guide-summary">
-      <strong class="product-guide-content_title">Nói gọn nè</strong>
+      <strong class="product-guide-content_title">Description:</strong>
       <span class="product-guide-summary-text"></span>
     </div>
 
     <div class="product-guide-example">
-      <strong class="product-guide-content_title">Thử hình dung</strong>
+      <strong class="product-guide-content_title">Example:</strong>
       <span class="product-guide-example-text"></span>
     </div>
   `;
@@ -1013,38 +1263,8 @@ function initProductGuidePanel() {
   let hideTimer = null;
 
 
-  const titleEl   = panel.querySelector('.product-guide-title');
   const summaryEl = panel.querySelector('.product-guide-summary-text');
   const exampleEl = panel.querySelector('.product-guide-example-text');
-
-  function positionPanel(target) {
-    const rect = target.getBoundingClientRect();
-    const gap = 14;
-    const panelWidth = Math.min(300, window.innerWidth - 24);
-    const panelHeight = panel.offsetHeight || 210;
-    const rightSpace = window.innerWidth - rect.right - gap;
-    const leftSpace = rect.left - gap;
-    let left;
-    let top;
-
-    if (rightSpace >= panelWidth) {
-      left = rect.right + gap;
-      top = rect.top + rect.height / 2 - panelHeight / 2;
-    } else if (leftSpace >= panelWidth) {
-      left = rect.left - panelWidth - gap;
-      top = rect.top + rect.height / 2 - panelHeight / 2;
-    } else if (window.innerHeight - rect.bottom >= panelHeight + gap) {
-      left = rect.left + rect.width / 2 - panelWidth / 2;
-      top = rect.bottom + gap;
-    } else {
-      left = rect.left + rect.width / 2 - panelWidth / 2;
-      top = rect.top - panelHeight - gap;
-    }
-
-    panel.style.width = `${panelWidth}px`;
-    panel.style.left = `${Math.max(12, Math.min(left, window.innerWidth - panelWidth - 12))}px`;
-    panel.style.top = `${Math.max(12, Math.min(top, window.innerHeight - panelHeight - 12))}px`;
-  }
 
   function findGuideTarget(node) {
     if (!node || node === document || node === window) return null;
@@ -1060,16 +1280,10 @@ function initProductGuidePanel() {
     activeGuide = guide;
     activeTarget = target;
 
-    titleEl.textContent = guide.title || '';
     summaryEl.textContent = guide.summary || guide.how || '';
     exampleEl.textContent = guide.example || '';
 
-    panel.classList.add('measuring');
     panel.classList.add('visible');
-    requestAnimationFrame(() => {
-      panel.classList.remove('measuring');
-      positionPanel(target);
-    });
   }
 
   function hideGuide() {
@@ -1102,10 +1316,6 @@ function initProductGuidePanel() {
   document.addEventListener('focusout', e => {
     if (activeTarget && activeTarget.contains(e.target)) hideGuide();
   });
-
-  window.addEventListener('resize', () => {
-    if (activeTarget) positionPanel(activeTarget);
-  });
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1120,34 +1330,27 @@ async function init() {
   STATE.glossary  = json.glossary;
   await loadProductGuides();
 
-  // ========== REAL DATA FROM SUPABASE ==========
-  const tickers = Object.keys(STATE.stocks);
-  console.log('🔄 Initializing with real data from Supabase...');
+  // ========== REAL DATA FROM BACKEND API ==========
+  // Every ticker listed in stocks.json, plus the VN-Index benchmark used for Beta.
+  const tickers = [...Object.keys(STATE.stocks), 'VNINDEX'];
+  console.log('🔄 Initializing with real data from the backend API...');
 
   try {
     const realData = await loadStockData(tickers);
-    
+
     // Verify data loaded successfully
     const hasData = Object.values(realData).some(arr => arr.length > 0);
     if (!hasData) {
-      throw new Error('No data returned from Supabase');
+      throw new Error('No data returned from the backend API');
     }
     
     STATE.allData = realData;
     STATE.selected = STATE.selected || 'FPT'; // Default to FPT
     console.log('✅ Real data loaded successfully');
-    
-    // Clear old fake data cache
-    try {
-      localStorage.removeItem('fakeStockCache');
-      sessionStorage.clear();
-    } catch (e) {
-      console.warn('Could not clear old cache');
-    }
-    
+
   } catch (error) {
-    console.error('❌ Failed to load real data from Supabase:', error.message);
-    alert('⚠️ Không thể kết nối Supabase.\n\nVui lòng kiểm tra:\n1. Internet connection\n2. Supabase API keys\n3. Database has stock_prices data\n\nError: ' + error.message);
+    console.error('❌ Failed to load real data from the backend API:', error.message);
+    alert('⚠️ Không thể tải dữ liệu cổ phiếu.\n\nVui lòng kiểm tra:\n1. Internet connection\n2. Backend server đang chạy\n3. Database has stock_prices data\n\nError: ' + error.message);
     return; // Stop init if data fails
   }
   // ========================================
@@ -1161,6 +1364,7 @@ async function init() {
   initWatchlist();
   initProductGuidePanel();
   renderWatchlist();
+  syncWatchlistFromBackend();
   render();
   updateClock();
   setInterval(updateClock, 1000);
@@ -1210,10 +1414,26 @@ window.addEventListener('DOMContentLoaded', init);
   const tooltip = document.getElementById('chatTooltip');
   const tooltipClose = document.getElementById('chatTooltipClose');
   const hideTooltip = () => tooltip?.classList.add('hidden');
+  const showTooltip = () => {
+    tooltip?.classList.remove('hidden');
+    setTimeout(hideTooltip, 7000);
+  };
 
   hideTooltip(); // ẩn từ đầu, chờ guide đóng mới hiện
   tooltipClose?.addEventListener('click', hideTooltip);
   fab.addEventListener('click', hideTooltip);
+
+  // Expose để initGuideOverlay gọi sau khi đóng guide
+  window._showChatTooltip = showTooltip;
+
+  // history gửi lên API (không gồm system prompt)
+  const history = [];
+
+  const SYSTEM = `Bạn là AlphaQuant AI — trợ lý phân tích rủi ro chứng khoán Việt Nam.
+Trả lời ngắn gọn, rõ ràng, bằng tiếng Việt (hoặc tiếng Anh nếu người dùng hỏi tiếng Anh).
+Chỉ tư vấn thông tin tham khảo, không phải khuyến nghị đầu tư chính thức.
+Các cổ phiếu có trong hệ thống: VNM (Vinamilk), VIC (Vingroup), HPG (Hòa Phát), FPT (FPT Corp), MWG (Mobile World), VHM (Vinhomes).
+Các chỉ số hỗ trợ: Volatility, Sharpe Ratio, Beta, Max Drawdown, Rolling Volatility.`;
 
   /* Toggle cửa sổ */
   fab.addEventListener('click', () => {
@@ -1236,7 +1456,6 @@ window.addEventListener('DOMContentLoaded', init);
     return wrap;
   }
 
-  /* Gọi Anthropic API */
 
 const FAKE_RESPONSES = [
     // Lượt 1 — ATO
@@ -1249,6 +1468,8 @@ const FAKE_RESPONSES = [
   let fakeMsgCount = 0;
 
 async function askAI(userText) {
+    history.push({ role: 'user', content: userText });
+
     sendBtn.disabled = true;
 
     // Tạo bubble AI với span rỗng trước
@@ -1283,6 +1504,7 @@ async function askAI(userText) {
       await new Promise(r => setTimeout(r, token.startsWith('<') ? 0 : 18));
     }
 
+    history.push({ role: 'assistant', content: raw });
     sendBtn.disabled = false;
     input.focus();
   }
@@ -1367,11 +1589,7 @@ function buildSidebar() {
 }
 
 
-const currentUser = JSON.parse(
-    localStorage.getItem("user")
-);
-
-console.log(currentUser);
+const currentUser = window.getCurrentUser();
 
 window.updateNavbar = updateNavbar;
 window.logout = logout;

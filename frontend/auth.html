@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaQuant | Đăng nhập / Đăng ký</title>
+  <script src="config.js"></script>
+  <!-- Already-authenticated visitors go straight to the app -->
+  <script>
+    if (window.getCurrentUser()) {
+      window.location.replace("/dashboard");
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-bg text-white font-body">
+
+  <header class="topnav">
+    <div class="topnav-nav-row">
+      <nav class="topnav-nav">
+        <a href="index.html" class="topnav-nav-item topnav-nav-home" title="AlphaQuant Home">
+          <img src="assets/home-button.jpg" alt="AlphaQuant" class="topnav-home-icon" />
+        </a>
+        <a href="index.html" class="topnav-nav-item">Giới thiệu</a>
+        <a href="pricing.html" class="topnav-nav-item">Bảng giá</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="auth-page">
+    <p class="font-mono text-xs tracking-widest" style="color:#00ff9480">⚡ ALPHAQUANT</p>
+  </main>
+
+  <!-- ─── AUTH MODAL (reused as-is; rendered as the page's main content) ─── -->
+  <div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+    <div class="auth-modal-box">
+      <div class="flex items-center justify-between mb-1">
+        <span class="font-mono text-green font-bold tracking-widest text-base" id="authModalTitle">LOGIN</span>
+      </div>
+      <p class="text-muted text-sm mb-5" id="authModalDesc">Đăng nhập vào tài khoản AlphaQuant của bạn.</p>
+
+      <div id="authFormFields" class="flex flex-col gap-3">
+
+        <input id="authUsername" type="text" placeholder="Username" class="auth-input">
+
+        <input id="authEmail" type="email" placeholder="Email" class="auth-input" style="display: none;">
+
+        <input id="authPhone" type="text" placeholder="Số điện thoại / Phone (09xxxxxxxx)" class="auth-input" style="display: none;">
+
+        <select id="authGender" class="auth-input" style="display: none;">
+          <option value="">Giới tính / Gender</option>
+          <option value="male">Nam</option>
+          <option value="female">Nữ</option>
+          <option value="other">Khác</option>
+          <option value="prefer_not_to_say">Không muốn tiết lộ</option>
+        </select>
+
+        <input id="authPassword" type="password" placeholder="Mật khẩu / Password" class="auth-input">
+
+        <input id="authConfirmPassword" type="password" placeholder="Xác nhận mật khẩu / Confirm password" class="auth-input" style="display: none;">
+
+      </div>
+
+      <p id="authErrorMessage" class="text-red text-xs mt-3 hidden"></p>
+
+      <button id="authResendBtn" type="button" class="text-green text-xs underline mt-2 hidden">
+        Gửi lại email xác nhận / Resend verification email
+      </button>
+
+      <div id="authCheckEmailPanel" class="hidden">
+        <p class="text-sm text-muted mt-1">
+          Vui lòng kiểm tra email để xác nhận tài khoản trước khi đăng nhập. / Please check your email to verify your account before logging in.
+        </p>
+      </div>
+
+      <button id="authSubmit" class="btn-solid w-full mt-5 justify-center">
+        Continue →
+      </button>
+
+      <p class="text-center text-muted text-xs mt-4">
+        <a href="#" id="authSwitchMode" class="underline"></a>
+      </p>
+    </div>
+  </div>
+
+  <script src="validators.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const initialMode = params.get("mode") === "signup" ? "signup" : "login";
+      openModal(initialMode);
+
+      const switchLink = document.getElementById("authSwitchMode");
+      function renderSwitchLink(currentMode) {
+        switchLink.textContent = currentMode === "login"
+          ? "Chưa có tài khoản? Đăng ký"
+          : "Đã có tài khoản? Đăng nhập";
+      }
+      renderSwitchLink(initialMode);
+      switchLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        const nextMode = document.getElementById("authModalTitle").textContent === "LOGIN" ? "signup" : "login";
+        openModal(nextMode);
+        renderSwitchLink(nextMode);
+      });
+    });
+  </script>
+</body>
+</html>
