@@ -3,7 +3,7 @@
 // top-level `const` is visible to them as a shared global).
 const API_BASE_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
     ? `${window.location.protocol}//${window.location.host}`
-    : "https://alphaquant-api-cg7b.onrender.com";
+    : "https://alphaquant-api-yfae.onrender.com";
 
 // Reads the locally-stored session token WITHOUT verifying its signature —
 // safe for optimistic UI (e.g. deciding whether to redirect before a
