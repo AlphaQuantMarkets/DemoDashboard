@@ -12,31 +12,35 @@
     }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style_index.css" />
 </head>
-<body class="bg-bg text-white font-body">
+<body>
 
-  <header class="topnav">
-    <div class="topnav-nav-row">
-      <nav class="topnav-nav">
-        <a href="index.html" class="topnav-nav-item topnav-nav-home" title="AlphaQuant Home">
-          <img src="assets/home-button.jpg" alt="AlphaQuant" class="topnav-home-icon" />
-        </a>
-        <a href="index.html" class="topnav-nav-item">Giới thiệu</a>
-        <a href="pricing.html" class="topnav-nav-item">Bảng giá</a>
-      </nav>
+  <header class="header">
+    <div class="header-left">
+      <div class="nav-group">
+        <img src="assets/home-button.jpg" alt="AlphaQuant Logo" class="logo">
+        <a href="index.html" class="mini-link">Giới thiệu</a>
+        <a href="pricing.html" class="mini-link">Bảng giá</a>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <a href="index.html" class="btn btn-text">Về trang chủ</a>
+      <a href="auth.html?mode=signup" class="btn btn-primary">Đăng ký</a>
     </div>
   </header>
 
   <main class="auth-page">
-    <p class="font-mono text-xs tracking-widest" style="color:#00ff9480">⚡ ALPHAQUANT</p>
+    <p class="eyebrow">⚡ ALPHAQUANT</p>
   </main>
 
   <!-- ─── AUTH MODAL (reused as-is; rendered as the page's main content) ─── -->
-  <div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center">
-    <div class="auth-modal-box">
-      <div class="flex items-center justify-between mb-1">
+  <div id="authModal" class="fixed inset-0 z-50 items-center justify-center" style="position: fixed; inset: 0; z-index: 1000; display: none;">
+    <div class="auth-modal-box" style="position: relative; z-index: 2;">
+      <div class="auth-modal-header">
         <span class="font-mono text-green font-bold tracking-widest text-base" id="authModalTitle">LOGIN</span>
+        <button id="authCloseBtn" type="button" class="auth-close-btn" aria-label="Đóng">×</button>
       </div>
       <p class="text-muted text-sm mb-5" id="authModalDesc">Đăng nhập vào tài khoản AlphaQuant của bạn.</p>
 
@@ -82,6 +86,12 @@
         <a href="#" id="authSwitchMode" class="underline"></a>
       </p>
     </div>
+  </div>
+
+  <div class="background-decoration">
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+    <div class="grid-bg"></div>
   </div>
 
   <script src="validators.js"></script>

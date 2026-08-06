@@ -168,6 +168,14 @@ router.post("/login", requireDatabase, requireJwtSecret, async (req, res) => {
             });
         }
 
+        if (!user.is_email_verified && process.env.SKIP_EMAIL_VERIFICATION !== "true") {
+            return res.status(403).json({
+                error: "Please verify your email before logging in.",
+                code: "EMAIL_NOT_VERIFIED",
+                email: user.email
+            });
+        }
+
         res.json({
             success: true,
             user: {

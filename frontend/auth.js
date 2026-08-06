@@ -41,6 +41,10 @@ function openModal(type) {
     const title = document.getElementById("authModalTitle");
     const desc = document.getElementById("authModalDesc");
 
+    modal.classList.remove("hidden");
+    modal.classList.add("open");
+    modal.style.display = "flex";
+
     document.getElementById("authFormFields").style.display = "";
     document.getElementById("authSubmit").style.display = "";
     document.getElementById("authCheckEmailPanel").classList.add("hidden");
@@ -67,7 +71,10 @@ function openModal(type) {
 }
 
 function closeModal() {
-    document.getElementById("authModal").classList.remove("open");
+    const modal = document.getElementById("authModal");
+    modal.classList.remove("open");
+    modal.classList.add("hidden");
+    modal.style.display = "none";
 }
 
 function validateSignupInput({ username, email, phone, gender, password, confirmPassword }) {
@@ -173,6 +180,8 @@ async function handleAuth() {
 
 document.addEventListener("DOMContentLoaded", () => {
     const btn = document.getElementById("authSubmit");
+    const closeBtn = document.getElementById("authCloseBtn");
+    const modal = document.getElementById("authModal");
 
     if (!btn) {
         console.error("Không tìm thấy nút authSubmit");
@@ -180,6 +189,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     btn.addEventListener("click", handleAuth);
+
+    closeBtn?.addEventListener("click", () => {
+        window.location.href = "index.html";
+    });
+
+    modal?.addEventListener("click", (event) => {
+        if (event.target === modal) {
+            window.location.href = "index.html";
+        }
+    });
 
     document.getElementById("authResendBtn")?.addEventListener("click", resendVerificationEmail);
 });
