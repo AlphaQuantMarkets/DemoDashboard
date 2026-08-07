@@ -102,11 +102,13 @@ body {
   gap: 16px;
   padding: 0 40px;      /* căn lề 2 bên rộng hơn */
   height: 48px;
+  min-width: 0;
 }
 .topnav-nav {
   display: flex;
   align-items: center;
   gap: 2px;
+  min-width: 0;
 }
 .topnav-nav-item {
   font-family: var(--font-body);
@@ -325,6 +327,7 @@ body {
   grid-template-columns: var(--sidebar-w) 1fr;
   min-height: calc(100vh - var(--footer-h));
   margin-top: 0;
+  min-width: 0;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1194,6 +1197,15 @@ input[type=range] {
 
 /* ── Tablet ngang / Desktop nhỏ (≤ 1100px) ── */
 @media (max-width: 1100px) {
+  .topnav-nav-row { padding-inline: 20px; gap: 10px; }
+  .topnav-nav {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .topnav-nav::-webkit-scrollbar { display: none; }
+  .topnav-nav-item { flex: 0 0 auto; }
+  .main { padding-inline: 18px; }
   .metrics-row { grid-template-columns: repeat(3, 1fr); }
   .topnav-nav-item { font-size: 0.82rem; padding: 5px 10px; }
   .topnav-banner-img { height: 160px; }

@@ -10,8 +10,9 @@
   text-transform: uppercase;
 }
 .tutor-dashboard-link { white-space: nowrap; }
-.tutor-page { width: min(1080px, calc(100% - 40px)); margin: 0 auto; padding: 48px 0 56px; }
-.tutor-heading { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 26px; }
+.tutor-page { width: min(1080px, calc(100% - 40px)); margin: 0 auto; padding: 48px 0 56px; min-width: 0; }
+.tutor-heading { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 26px; min-width: 0; }
+.tutor-heading > div { min-width: 0; }
 .tutor-kicker, .tutor-section-label { margin: 0 0 8px; color: var(--green); font-family: var(--mono); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; }
 .tutor-heading h1 { margin: 0; color: var(--text); font-family: var(--mono); font-size: clamp(1.65rem, 3vw, 2.35rem); line-height: 1.15; }
 .tutor-heading > div > p:last-child { max-width: 620px; margin: 12px 0 0; color: var(--muted); font-size: 1rem; }
@@ -23,7 +24,7 @@
 .premium-gate > p:not(.tutor-kicker) { max-width: 500px; margin: 12px auto 22px; color: var(--muted); line-height: 1.6; }
 .premium-gate__note { font-size: 0.78rem; }
 .tutor-app { overflow: hidden; }
-.tutor-suggestions-wrap { display: grid; grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1.6fr); gap: 24px; padding: 22px; border-bottom: 1px solid var(--border); background: #081a2d; }
+.tutor-suggestions-wrap { display: grid; grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1.6fr); gap: 24px; padding: 22px; border-bottom: 1px solid var(--border); background: #081a2d; min-width: 0; }
 .tutor-section-copy { max-width: 330px; margin: 0; color: var(--muted); font-size: 0.86rem; line-height: 1.45; }
 .tutor-suggestions { display: flex; flex-wrap: wrap; align-content: start; gap: 8px; }
 .tutor-suggestion { border: 1px solid rgba(126, 200, 227, 0.42); background: transparent; padding: 8px 10px; color: var(--blue); font: inherit; font-size: 0.82rem; cursor: pointer; transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease; }
@@ -60,4 +61,10 @@
   .tutor-message { max-width: 92%; }
   .tutor-input-row { grid-template-columns: 1fr auto; padding: 14px 16px; }
   .tutor-input-row select { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (max-width: 1100px) and (min-width: 761px) {
+  .tutor-page { width: min(100% - 32px, 1080px); }
+  .tutor-heading { align-items: flex-start; }
+  .tutor-suggestions-wrap { gap: 16px; padding: 18px; }
+  .tutor-input-row { padding: 14px 18px; }
 }
