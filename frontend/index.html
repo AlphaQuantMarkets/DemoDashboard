@@ -3,15 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <base href="/DemoDashboard/frontend/" />
   <title>AlphaQuant | Học đầu tư chứng khoán cùng AI</title>
   <!-- Shared environment config (API_BASE_URL, getCurrentUser) — must load first -->
-  <script src="config.js"></script>
+  <script src="../config.js"></script>
   <!-- Already-authenticated visitors go straight to the app -->
   <script>
-    if (window.getCurrentUser()) {<base href="/DemoDashboard/">}
+    if (window.getCurrentUser()) {
+      window.location.replace("/DemoDashboard/dashboard");
+    }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="style_index.css" >
+  <link rel="stylesheet" href="style_index.css" />
 </head>
 <body>
     <header class="header">
@@ -116,5 +119,4 @@
 
     <script src="script.js"></script>
 </body>
-</html>
 </html>
