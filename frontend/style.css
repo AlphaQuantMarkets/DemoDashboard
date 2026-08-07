@@ -2169,13 +2169,38 @@ button, select, input { font-family: var(--font-body); }
 
 .topnav-nav {
   justify-content: space-between;
-  gap: 0;
+  gap: 2px;
   overflow: visible;
 }
 
 .topnav-nav-item {
-  padding: 7px clamp(7px, 0.8vw, 12px);
+  padding: 7px clamp(5px, 0.65vw, 9px);
   font-size: clamp(0.72rem, 0.82vw, 0.86rem);
+  opacity: 0.9;
+  transition: color 180ms ease, background-color 180ms ease, opacity 180ms ease, transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.topnav-nav-item:hover,
+.topnav-nav-item:focus-visible {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.topnav-dropdown-wrap,
+.topnav-nav-tutor {
+  animation: nav-item-enter 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.topnav-dropdown-wrap:nth-of-type(2) { animation-delay: 30ms; }
+.topnav-dropdown-wrap:nth-of-type(3) { animation-delay: 60ms; }
+.topnav-dropdown-wrap:nth-of-type(4) { animation-delay: 90ms; }
+.topnav-dropdown-wrap:nth-of-type(5) { animation-delay: 120ms; }
+.topnav-dropdown-wrap:nth-of-type(6) { animation-delay: 150ms; }
+.topnav-dropdown-wrap:nth-of-type(7) { animation-delay: 180ms; }
+
+@keyframes nav-item-enter {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .topnav-right { gap: 8px; }
@@ -2216,6 +2241,13 @@ button, select, input { font-family: var(--font-body); }
   color: var(--green);
 }
 
+.topnav-search.is-open .topnav-search-toggle {
+  right: 0;
+  left: auto;
+  border-color: transparent;
+  background: transparent;
+}
+
 .topnav-search-icon {
   position: absolute;
   left: auto;
@@ -2236,7 +2268,7 @@ button, select, input { font-family: var(--font-body); }
   right: 0;
   width: calc(100% - 18px);
   height: 38px;
-  padding: 7px 14px 7px 46px;
+  padding: 7px 46px 7px 16px;
   opacity: 0;
   pointer-events: none;
   transform: translateX(8px);
@@ -2244,6 +2276,7 @@ button, select, input { font-family: var(--font-body); }
 }
 
 .topnav-search.is-open .topnav-search-input {
+  width: 100%;
   opacity: 1;
   pointer-events: auto;
   transform: translateX(0);
