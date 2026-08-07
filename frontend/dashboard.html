@@ -9,7 +9,7 @@
   <!-- Protected page: bounce logged-out visitors to /auth before anything renders -->
   <script>
     if (!window.getCurrentUser()) {
-      window.location.replace("/auth");
+      window.location.replace("auth.html");
     }
   </script>
   <!-- Tailwind CSS (used for topnav, footer, modal, utility classes) -->

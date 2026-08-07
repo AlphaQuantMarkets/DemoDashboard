@@ -101,7 +101,7 @@ async function signUp({ username, email, phone, gender, password, confirmPasswor
 
     try {
         const response = await fetch(
-            `${API_BASE_URL}/api/auth/signup`,
+            `${API_BASE_URL}/auth/signup`,
             {
                 method: "POST",
                 headers: {
@@ -196,7 +196,7 @@ async function login(username, password) {
 
     try {
         const response = await fetch(
-            `${API_BASE_URL}/api/auth/login`,
+            `${API_BASE_URL}/auth/login`,
             {
                 method: "POST",
                 headers: {
@@ -239,7 +239,7 @@ function logout() {
     updateNavbar();
 
     if (window.location.pathname.endsWith("/dashboard.html")) {
-        window.location.href = "/";
+        window.location.href = "index.html";
     }
 
 }
@@ -256,7 +256,7 @@ async function verifySession() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
             headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -321,7 +321,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const isSessionValid = await verifySession();
 
     if (!isSessionValid && window.location.pathname.endsWith("/dashboard.html")) {
-        window.location.replace("/auth");
+        window.location.replace("auth.html");
     }
 
 });

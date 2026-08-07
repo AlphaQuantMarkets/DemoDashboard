@@ -10,7 +10,7 @@
   async function explainRisk(payload) {
     let response;
     try {
-      response = await fetch(`${API_BASE_URL}/api/ai/risk-explanation`, {
+      response = await fetch(`${API_BASE_URL}/ai/risk-explanation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

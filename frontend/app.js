@@ -1,7 +1,7 @@
 /* ─── ALPHAQUANT · app.js ────────────────────────────────────────────── */
 
 async function loadOneStock(ticker) {
-  const response = await fetch(`${API_BASE_URL}/api/stocks/${ticker}/history`);
+  const response = await fetch(`${API_BASE_URL}/stocks/${ticker}/history`);
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
@@ -590,7 +590,7 @@ function saveWatchlist() {
 
   if (!getCurrentUser()) return;
 
-  fetch(`${API_BASE_URL}/api/user-state/watchlist`, {
+  fetch(`${API_BASE_URL}/user-state/watchlist`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -608,7 +608,7 @@ async function syncWatchlistFromBackend() {
   if (!getCurrentUser()) return;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user-state/watchlist`, {
+    const response = await fetch(`${API_BASE_URL}/user-state/watchlist`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
     });
     if (!response.ok) return;

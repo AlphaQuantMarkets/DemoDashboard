@@ -6,11 +6,11 @@
   <base href="/DemoDashboard/frontend/" />
   <title>AlphaQuant | Học đầu tư chứng khoán cùng AI</title>
   <!-- Shared environment config (API_BASE_URL, getCurrentUser) — must load first -->
-  <script src="../config.js"></script>
+  <script src="config.js"></script>
   <!-- Already-authenticated visitors go straight to the app -->
   <script>
     if (window.getCurrentUser()) {
-      window.location.replace("/DemoDashboard/dashboard");
+      window.location.replace("dashboard.html");
     }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -117,6 +117,5 @@
         <div class="grid-bg"></div>
     </div>
 
-    <script src="script.js"></script>
 </body>
 </html>
