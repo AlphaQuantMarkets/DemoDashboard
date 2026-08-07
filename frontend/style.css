@@ -109,7 +109,12 @@ body {
   align-items: center;
   gap: 2px;
   min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.topnav-nav::-webkit-scrollbar { display: none; }
 .topnav-nav-item {
   font-family: var(--font-body);
   font-size: 0.9rem;           /* to hơn */
@@ -223,9 +228,10 @@ body {
 /* Search */
 .topnav-search {
   position: relative;
-  flex: 1;
-  max-width: 400px;
-  margin: 0 auto;
+  flex: 0 1 280px;
+  min-width: 144px;
+  max-width: 280px;
+  margin: 0;
 }
 .topnav-search-icon {
   position: absolute;
@@ -1973,6 +1979,7 @@ input[type=range] {
 
   /* Ẩn các nav item text, chỉ giữ home icon */
   .topnav-dropdown-wrap { display: none; }
+  .topnav-study-wrap { display: block; }
   .topnav-nav-home      { display: flex; }
 
   /* Search thu hẹp */

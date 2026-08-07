@@ -20,7 +20,7 @@
         headers.Authorization = `Bearer ${token}`;
       }
 
-      response = await fetch(apiUrl('/api/ai/tutor'), {
+      response = await fetch(apiUrl('/ai/tutor'), {
         method: 'POST',
         headers,
         body: JSON.stringify({ question, userLevel, stockContext })

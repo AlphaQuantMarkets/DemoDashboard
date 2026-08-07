@@ -9,7 +9,7 @@
     }
 
     try {
-      const response = await fetch(window.TutorApi.apiUrl('/api/auth/me'), {
+      const response = await fetch(window.TutorApi.apiUrl('/auth/me'), {
         headers: { Authorization: `Bearer ${token}` }
       });
 
