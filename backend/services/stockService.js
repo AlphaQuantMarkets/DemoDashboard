@@ -17,6 +17,36 @@ const MAX_ROWS_PER_SYMBOL = 500;
 let client;
 let warnedAboutLocalFallback = false;
 
+function getSupabaseDiagnostics() {
+    let host = null;
+
+    try {
+        host = process.env.SUPABASE_URL
+            ? new URL(process.env.SUPABASE_URL).host
+            : null;
+    } catch {
+        host = "invalid-url";
+    }
+
+    return {
+        hasSupabaseUrl: Boolean(process.env.SUPABASE_URL),
+        hasServiceKey: Boolean(process.env.SUPABASE_SERVICE_KEY),
+        supabaseHost: host
+    };
+}
+
+function getErrorDiagnostics(error) {
+    return {
+        name: error?.name,
+        message: error?.message,
+        code: error?.code,
+        status: error?.status,
+        details: error?.details,
+        hint: error?.hint,
+        cause: error?.cause?.message
+    };
+}
+
 function getSupabaseClient() {
     if (client) {
         return client;
@@ -40,16 +70,47 @@ async function getStockHistoryFromSupabase(supabase, symbol) {
     const rows = [];
 
     for (let from = 0; ; from += PAGE_SIZE) {
-        const { data, error } = await supabase
-            .from("stock_prices")
-            .select("trading_date, open, high, low, close, volume")
-            .eq("symbol", symbol)
-            .order("trading_date", { ascending: true })
-            .range(from, from + PAGE_SIZE - 1);
+        let data;
+        let error;
+
+        try {
+            ({ data, error } = await supabase
+                .from("stock_prices")
+                .select("trading_date, open, high, low, close, volume")
+                .eq("symbol", symbol)
+                .order("trading_date", { ascending: true })
+                .range(from, from + PAGE_SIZE - 1));
+        } catch (cause) {
+            console.error("Stock API provider request threw before a response", {
+                source: "supabase",
+                symbol,
+                from,
+                to: from + PAGE_SIZE - 1,
+                ...getSupabaseDiagnostics(),
+                error: getErrorDiagnostics(cause)
+            });
+
+            const wrapped = new Error("Stock data provider request failed");
+            wrapped.status = 502;
+            wrapped.source = "supabase";
+            wrapped.cause = cause;
+            throw wrapped;
+        }
 
         if (error) {
+            console.error("Stock API provider returned an error", {
+                source: "supabase",
+                symbol,
+                from,
+                to: from + PAGE_SIZE - 1,
+                ...getSupabaseDiagnostics(),
+                error: getErrorDiagnostics(error)
+            });
+
             const wrapped = new Error(error.message);
             wrapped.status = 502;
+            wrapped.source = "supabase";
+            wrapped.cause = error;
             throw wrapped;
         }
 
@@ -93,12 +154,21 @@ async function getStockHistoryFromLocalPostgres(symbol) {
             [symbol]
         );
     } catch (err) {
+        console.error("Stock API local database query failed", {
+            source: "database-fallback",
+            symbol,
+            ...getSupabaseDiagnostics(),
+            error: getErrorDiagnostics(err)
+        });
+
         const wrapped = new Error(
             `Local stock_prices lookup failed: ${err.message}. Run the SQL in ` +
             "backend/migrations/0003-create-stock-prices-table.sql against DATABASE_URL, " +
             "then `npm run seed:stocks`."
         );
         wrapped.status = 502;
+        wrapped.source = "database-fallback";
+        wrapped.cause = err;
         throw wrapped;
     }
 

@@ -16,9 +16,23 @@ router.get("/:symbol/history", async (req, res) => {
         const history = await getStockHistory(symbol);
         res.json({ symbol, history });
     } catch (error) {
-        console.error(`Stock history error for ${symbol}:`, error);
-
         const status = Number.isInteger(error.status) ? error.status : 500;
+
+        // Keep provider details in Render logs only; the browser receives the
+        // same safe, generic 502 response as before.
+        console.error("Stock history request failed", {
+            symbol,
+            status,
+            source: error.source || "unknown",
+            error: {
+                name: error.name,
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint,
+                cause: error.cause?.message
+            }
+        });
 
         res.status(status).json({
             error: status === 503
