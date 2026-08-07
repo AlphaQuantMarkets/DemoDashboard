@@ -2161,6 +2161,134 @@ button, select, input { font-family: var(--font-body); }
   .metric-card:hover { transform: none; }
 }
 
+/* ─── Compact navigation and expanding search ───────────────────────── */
+.topnav-nav-row {
+  gap: 12px;
+  padding-inline: clamp(16px, 2.6vw, 40px);
+}
+
+.topnav-nav {
+  justify-content: space-between;
+  gap: 0;
+  overflow: visible;
+}
+
+.topnav-nav-item {
+  padding: 7px clamp(7px, 0.8vw, 12px);
+  font-size: clamp(0.72rem, 0.82vw, 0.86rem);
+}
+
+.topnav-right { gap: 8px; }
+#clockEl { display: none !important; }
+
+.topnav-search {
+  flex: 0 0 38px;
+  min-width: 38px;
+  max-width: none;
+  height: 38px;
+  transition: flex-basis 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.topnav-search.is-open { flex-basis: min(280px, 25vw); }
+
+.topnav-search-toggle {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg3);
+  color: var(--text);
+  cursor: pointer;
+  transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.topnav-search-toggle:hover,
+.topnav-search.is-open .topnav-search-toggle {
+  border-color: var(--green);
+  background: rgba(94, 234, 212, 0.1);
+  color: var(--green);
+}
+
+.topnav-search-icon {
+  position: absolute;
+  left: auto;
+  top: auto;
+  width: 17px;
+  height: 17px;
+  transform: none;
+  transition: opacity 160ms ease, transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.topnav-search-icon--close { opacity: 0; transform: rotate(-45deg) scale(0.72); }
+.topnav-search.is-open .topnav-search-icon--magnify { opacity: 0; transform: rotate(45deg) scale(0.72); }
+.topnav-search.is-open .topnav-search-icon--close { opacity: 1; transform: rotate(0) scale(1); }
+
+.topnav-search-input {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: calc(100% - 18px);
+  height: 38px;
+  padding: 7px 14px 7px 46px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(8px);
+  transition: opacity 160ms ease 80ms, transform 300ms cubic-bezier(0.16, 1, 0.3, 1), border-color var(--transition), box-shadow var(--transition);
+}
+
+.topnav-search.is-open .topnav-search-input {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.topnav-search .search-dropdown { left: 0; right: 0; opacity: 0; pointer-events: none; transition: opacity 160ms ease; }
+.topnav-search.is-open .search-dropdown:not(.hidden) { opacity: 1; pointer-events: auto; }
+
+.user-menu { position: relative; display: flex; align-items: center; min-height: 38px; }
+#userInfo { padding: 7px 10px; border-radius: 10px; cursor: default; white-space: nowrap; }
+#userInfo:hover { background: rgba(255, 255, 255, 0.06); }
+
+.user-menu #logoutBtn { display: none !important; }
+.user-menu:hover #logoutBtn,
+.user-menu:focus-within #logoutBtn {
+  display: inline-flex !important;
+  align-items: center;
+  min-height: 34px;
+  margin-left: 4px;
+  padding: 5px 10px;
+  border-color: rgba(255, 115, 115, 0.45);
+  color: #fecaca;
+  font-size: 0.75rem;
+}
+
+/* Auth.js keeps the user label hidden while logged out; never expose logout then. */
+.user-menu:has(#userInfo[style*="display: none"]) #logoutBtn { display: none !important; }
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .topnav-dropdown-wrap { display: block; }
+  .topnav-nav { gap: 2px; }
+  .topnav-nav-item { padding-inline: 6px; font-size: 0.7rem; }
+  .topnav-search.is-open { flex-basis: 190px; }
+}
+
+@media (max-width: 767px) {
+  .topnav-nav-row { flex-wrap: wrap; height: auto; padding-block: 7px; }
+  .topnav-nav { order: 2; flex: 1 0 100%; justify-content: flex-start; overflow-x: auto; }
+  .topnav-right { margin-left: auto; }
+  .topnav-dropdown-wrap:not(.topnav-study-wrap) { display: none; }
+  .topnav-study-wrap { display: block; }
+  .topnav-search.is-open { flex-basis: min(210px, 56vw); }
+  #userInfo { max-width: 132px; overflow: hidden; text-overflow: ellipsis; }
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    PUBLIC PAGES — landing / auth / pricing placeholders
 ══════════════════════════════════════════════════════════════════════ */

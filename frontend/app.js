@@ -545,6 +545,22 @@ function syncTutorStockContext(metrics) {
 function initSearch() {
   const input    = document.getElementById('headerSearch');
   const dropdown = document.getElementById('searchDropdown');
+  const search = document.getElementById('topnavSearch');
+  const toggle = document.getElementById('searchToggle');
+
+  function setSearchOpen(isOpen) {
+    search.classList.toggle('is-open', isOpen);
+    toggle.setAttribute('aria-expanded', String(isOpen));
+    toggle.setAttribute('aria-label', isOpen ? 'Đóng tìm kiếm' : 'Mở tìm kiếm');
+    if (isOpen) {
+      requestAnimationFrame(() => input.focus());
+    } else {
+      input.value = '';
+      dropdown.classList.add('hidden');
+    }
+  }
+
+  toggle.addEventListener('click', () => setSearchOpen(!search.classList.contains('is-open')));
 
   input.addEventListener('input', () => {
     const q = input.value.trim().toUpperCase();
@@ -570,6 +586,7 @@ function initSearch() {
         render();
         input.value = '';
         dropdown.classList.add('hidden');
+        setSearchOpen(false);
       });
       dropdown.appendChild(item);
     });
@@ -577,6 +594,10 @@ function initSearch() {
 
   document.addEventListener('click', e => {
     if (!e.target.closest('.topnav-search')) dropdown.classList.add('hidden');
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && search.classList.contains('is-open')) setSearchOpen(false);
   });
 }
 

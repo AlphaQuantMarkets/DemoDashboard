@@ -142,24 +142,6 @@
 <header class="topnav" id="topnav">
   <div class="topnav-nav-row">
     <nav class="topnav-nav">
-      <!-- HOME -->
-      <a href="index.html" class="topnav-nav-item topnav-nav-home" title="AlphaQuant Home">
-        <img src="assets/home-button.jpg" alt="Home" class="topnav-home-icon" />
-      </a>
-      <a href="dashboard.html" class="topnav-nav-item">Dashboard</a>
-      <a href="#compare" class="topnav-nav-item" data-dashboard-tab="tab2">Compare</a>
-      <a href="#risk" class="topnav-nav-item" data-dashboard-tab="tab1">Risk Assessment</a>
-      <!-- HỌC: kept with the primary links so it remains visible before the utility controls. -->
-      <div class="topnav-dropdown-wrap topnav-study-wrap">
-        <a href="#" class="topnav-nav-item">Học tập</a>
-        <div class="topnav-dropdown">
-          <div class="dropdown-col">
-            <p class="dropdown-heading">HỌC TẬP</p>
-            <a href="Learn/index.html">Mở môi trường</a>
-          </div>
-        </div>
-      </div>
-      <a href="../ai-tutor/" class="topnav-nav-item topnav-nav-tutor">AI Tutor <span>Premium</span></a>
       <!-- GIỚI THIỆU -->
       <div class="topnav-dropdown-wrap">
         <a href="#" class="topnav-nav-item">Giới thiệu</a>
@@ -172,6 +154,16 @@
             <a href="#">Beginner Investors</a>
             <a href="#">Dashboard Overview</a>
             <a href="#">Liên hệ / Hỗ trợ</a>
+          </div>
+        </div>
+      </div>
+      <!-- HỌC TẬP -->
+      <div class="topnav-dropdown-wrap topnav-study-wrap">
+        <a href="#" class="topnav-nav-item">Học tập</a>
+        <div class="topnav-dropdown">
+          <div class="dropdown-col">
+            <p class="dropdown-heading">HỌC TẬP</p>
+            <a href="Learn/index.html">Mở môi trường</a>
           </div>
         </div>
       </div>
@@ -257,10 +249,15 @@
 
     <!-- Right: Search + Clock + Auth -->
     <div class="topnav-right">
-      <div class="topnav-search">
-        <svg class="topnav-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="9" cy="9" r="6"/><path stroke-linecap="round" d="M15 15l3 3"/>
-        </svg>
+      <div class="topnav-search" id="topnavSearch">
+        <button id="searchToggle" class="topnav-search-toggle" type="button" aria-label="Mở tìm kiếm" aria-expanded="false">
+          <svg class="topnav-search-icon topnav-search-icon--magnify" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="9" r="6"/><path stroke-linecap="round" d="M15 15l3 3"/>
+          </svg>
+          <svg class="topnav-search-icon topnav-search-icon--close" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" d="M4 4l12 12M16 4L4 16"/>
+          </svg>
+        </button>
         <input id="headerSearch" type="text"
           placeholder="Tìm mã cổ phiếu..."
           class="topnav-search-input" autocomplete="off" />
@@ -281,18 +278,20 @@
           Sign Up
       </button>
 
-      <span
-          id="userInfo"
-          style="display:none;font-weight:600;color:#fff;">
-      </span>
+      <div class="user-menu">
+        <span
+            id="userInfo"
+            style="display:none;font-weight:600;color:#fff;">
+        </span>
 
-      <button
-          id="logoutBtn"
-          class="btn-outline"
-          style="display:none;"
-          onclick="logout()">
-          Logout
-      </button>
+        <button
+            id="logoutBtn"
+            class="btn-outline"
+            style="display:none;"
+            onclick="logout()">
+            Logout
+        </button>
+      </div>
     </div>
   </div>
 </header>
