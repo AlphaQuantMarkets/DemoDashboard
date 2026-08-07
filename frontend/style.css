@@ -2101,6 +2101,59 @@ input[type=range] {
   color: tomato;
 }
 
+/* ─── Dashboard interface polish: visual-only overrides ─────────────── */
+:root {
+  --bg: #07111f;
+  --bg2: #0b192b;
+  --bg3: #10243b;
+  --border: rgba(94, 234, 212, 0.16);
+  --border-lit: #5eead4;
+  --green: #5eead4;
+  --text: #e7eef8;
+  --muted: #98a7ba;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+  --font-body: 'DM Sans', Inter, system-ui, sans-serif;
+  --radius: 14px;
+  --transition: 180ms ease;
+}
+
+.topnav {
+  background: rgba(7, 17, 31, 0.9);
+  border-bottom-color: rgba(148, 163, 184, 0.16);
+}
+
+.topnav-nav-row { max-width: 1500px; width: 100%; margin: 0 auto; }
+
+.topnav-nav-item { border-radius: 9px; }
+
+.sidebar,
+.panel,
+.metric-card,
+.chart-card,
+.glossary-card,
+.community-card {
+  border-radius: var(--radius);
+}
+
+.metric-card,
+.chart-card,
+.glossary-card,
+.community-card {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+}
+
+.metric-card { transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition); }
+.metric-card:hover { transform: translateY(-3px); border-color: rgba(94, 234, 212, 0.42); box-shadow: 0 18px 34px rgba(0, 0, 0, 0.2); }
+
+button, select, input { font-family: var(--font-body); }
+
+@media (max-width: 767px) {
+  .topnav-nav-row { padding-inline: 12px; }
+  .topnav-banner-row { padding-inline: 12px; }
+  .topnav-banner-img { width: min(100%, 560px); border-radius: 10px; }
+  .metric-card:hover { transform: none; }
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    PUBLIC PAGES — landing / auth / pricing placeholders
 ══════════════════════════════════════════════════════════════════════ */

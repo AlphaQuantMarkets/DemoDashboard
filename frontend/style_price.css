@@ -207,3 +207,45 @@ body {
     width: 100%;
   }
 }
+
+/* ─── Pricing page polish: visual-only overrides ────────────────────── */
+.pricing-page {
+  max-width: 1120px;
+  padding-top: clamp(64px, 9vw, 108px);
+}
+
+.pricing-page h1 { letter-spacing: -0.045em; }
+
+.pricing-cards { gap: 24px; margin-top: 18px; }
+
+.pricing-card {
+  min-height: 342px;
+  padding: clamp(26px, 4vw, 38px);
+  border-radius: 22px;
+}
+
+.pricing-card--highlight {
+  position: relative;
+  overflow: hidden;
+  transform: translateY(-8px);
+}
+
+.pricing-card--highlight::before {
+  content: 'ĐỀ XUẤT';
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(0, 245, 140, 0.13);
+  color: var(--color-primary-bright);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.pricing-price { letter-spacing: -0.045em; }
+
+@media (max-width: 900px) {
+  .pricing-card--highlight { transform: none; }
+}

@@ -893,3 +893,45 @@ select:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+/* ─── Authentication page polish: visual-only overrides ─────────────── */
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: start center;
+  padding-top: clamp(112px, 16vh, 172px);
+}
+
+.auth-page .eyebrow {
+  padding: 8px 14px;
+  border: 1px solid rgba(0, 245, 140, 0.22);
+  border-radius: 999px;
+  background: rgba(0, 245, 140, 0.08);
+  color: var(--color-primary-bright);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+}
+
+.auth-modal-box {
+  width: min(var(--card-max-width), calc(100vw - 40px));
+  border-radius: 24px;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: linear-gradient(145deg, rgba(23, 33, 51, 0.97), rgba(10, 16, 27, 0.97));
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(0, 245, 140, 0.04);
+}
+
+.auth-input {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.auth-input:focus {
+  box-shadow: 0 0 0 4px rgba(0, 245, 140, 0.12);
+}
+
+.btn-solid { border-radius: 12px; letter-spacing: -0.01em; }
+
+@media (max-width: 480px) {
+  .auth-page { padding-top: 96px; }
+  .auth-modal-box { width: min(100vw - 28px, var(--card-max-width)); }
+}
