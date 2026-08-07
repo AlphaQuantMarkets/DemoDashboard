@@ -10,7 +10,12 @@ const aiRoutes = require("./routes/ai");
 const stocksRoutes = require("./routes/stocks");
 const userStateRoutes = require("./routes/userState");
 
-const DEFAULT_DEV_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"];
+const DEFAULT_DEV_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://alphaquantmarkets.github.io",
+    "https://alphaquant-api-yfae.onrender.com"
+];
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
