@@ -587,15 +587,6 @@ select.auth-input option {
 11 LINKS
 =========================================
 */
-#authResendBtn {
-  transition: color var(--duration-base) var(--ease-standard);
-}
-
-#authResendBtn:hover,
-#authResendBtn:focus-visible {
-  color: var(--color-primary-bright);
-}
-
 /*
 =========================================
 12 FORMS
@@ -615,13 +606,6 @@ select.auth-input option {
   border: 1px solid rgba(255, 92, 92, 0.25);
 }
 
-#authCheckEmailPanel:not(.hidden) {
-  margin-top: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-sm);
-  background-color: var(--color-glow);
-  border: 1px solid rgba(0, 245, 140, 0.2);
-}
 
 /*
 =========================================

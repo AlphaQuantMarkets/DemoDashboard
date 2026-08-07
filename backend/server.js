@@ -24,14 +24,6 @@ const apiRateLimiter = rateLimit({
     message: { error: "Too many requests. Please try again later." }
 });
 
-const resendVerificationRateLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    limit: 5,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: "Too many verification emails requested. Please try again later." }
-});
-
 const app = express();
 
 app.use(cors({
@@ -49,7 +41,6 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/stocks", stocksRoutes);
 app.use("/api/user-state", userStateRoutes);
 
-app.use("/api/auth/resend-verification", resendVerificationRateLimiter);
 app.use("/api/auth", authRoutes);
 
 // Clean URLs for the public/auth/dashboard pages. Redirecting (rather than

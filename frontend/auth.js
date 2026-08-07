@@ -3,8 +3,6 @@ console.log("auth.js đã được load");
 const SIGNUP_ONLY_FIELD_IDS = ["authEmail", "authPhone", "authGender", "authConfirmPassword"];
 
 let authMode = "login";
-let pendingVerificationEmail = null;
-
 function showAuthMessage(message, { isError = true } = {}) {
     const messageEl = document.getElementById("authErrorMessage");
     messageEl.textContent = message;
@@ -25,17 +23,9 @@ function setAuthLoading(isLoading) {
     btn.textContent = isLoading ? "Đang xử lý..." : "Continue →";
 }
 
-function showCheckEmailPanel() {
-    document.getElementById("authFormFields").style.display = "none";
-    document.getElementById("authSubmit").style.display = "none";
-    document.getElementById("authCheckEmailPanel").classList.remove("hidden");
-    document.getElementById("authResendBtn").classList.remove("hidden");
-}
-
 function openModal(type) {
 
     authMode = type;
-    pendingVerificationEmail = null;
 
     const modal = document.getElementById("authModal");
     const title = document.getElementById("authModalTitle");
@@ -47,8 +37,6 @@ function openModal(type) {
 
     document.getElementById("authFormFields").style.display = "";
     document.getElementById("authSubmit").style.display = "";
-    document.getElementById("authCheckEmailPanel").classList.add("hidden");
-    document.getElementById("authResendBtn").classList.add("hidden");
     hideAuthMessage();
 
     ["authUsername", "authEmail", "authPhone", "authGender", "authPassword", "authConfirmPassword"]
@@ -137,8 +125,8 @@ async function signUp({ username, email, phone, gender, password, confirmPasswor
             return;
         }
 
-        pendingVerificationEmail = data.email;
-        showCheckEmailPanel();
+        localStorage.setItem("authToken", data.token);
+        window.location.href = "dashboard.html";
 
     } catch {
         showAuthMessage("Không thể kết nối tới máy chủ.");
@@ -200,7 +188,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    document.getElementById("authResendBtn")?.addEventListener("click", resendVerificationEmail);
 });
 
 async function login(username, password) {
@@ -227,11 +214,6 @@ async function login(username, password) {
         if (!response.ok) {
             showAuthMessage(data.error);
 
-            if (data.code === "EMAIL_NOT_VERIFIED") {
-                pendingVerificationEmail = data.email;
-                document.getElementById("authResendBtn").classList.remove("hidden");
-            }
-
             return;
         }
 
@@ -241,43 +223,12 @@ async function login(username, password) {
 
         updateNavbar();
 
-        window.location.href = "/dashboard";
+        window.location.href = "dashboard.html";
 
     } catch {
         showAuthMessage("Không thể kết nối tới máy chủ.");
     } finally {
         setAuthLoading(false);
-    }
-}
-
-async function resendVerificationEmail() {
-
-    if (!pendingVerificationEmail) {
-        return;
-    }
-
-    const resendBtn = document.getElementById("authResendBtn");
-    resendBtn.disabled = true;
-
-    try {
-        const response = await fetch(
-            `${API_BASE_URL}/api/auth/resend-verification`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ email: pendingVerificationEmail })
-            }
-        );
-
-        const data = await response.json();
-        showAuthMessage(data.message || data.error, { isError: !response.ok });
-
-    } catch {
-        showAuthMessage("Không thể kết nối tới máy chủ.");
-    } finally {
-        resendBtn.disabled = false;
     }
 }
 

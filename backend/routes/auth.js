@@ -5,7 +5,6 @@ const router = express.Router();
 const pool = require("../db");
 const authMiddleware = require("../middleware/authMiddleware");
 const validators = require("../utils/validators");
-const emailVerificationService = require("../services/emailVerificationService");
 
 const SALT_ROUNDS = 10;
 const TOKEN_EXPIRY = "7d";
@@ -80,29 +79,25 @@ router.post("/signup", requireDatabase, requireJwtSecret, async (req, res) => {
 
     try {
         const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-        const { rawToken, tokenHash, expiresAt } = emailVerificationService.generateVerificationToken();
-
         const result = await pool.query(
             `
             INSERT INTO users(
                 username, email, phone_number, gender, password,
-                is_email_verified, email_verification_token_hash, email_verification_expires_at
+                is_email_verified
             )
-            VALUES ($1, $2, $3, $4, $5, false, $6, $7)
+            VALUES ($1, $2, $3, $4, $5, true)
             RETURNING id, username, email
             `,
-            [username, email, phoneNumber, gender, passwordHash, tokenHash, expiresAt]
+            [username, email, phoneNumber, gender, passwordHash]
         );
 
         const user = result.rows[0];
-
-        await emailVerificationService.sendVerificationEmail(user, rawToken);
 
         res.status(201).json({
             id: user.id,
             username: user.username,
             email: user.email,
-            message: "Please check your email to verify your account."
+            token: signToken(user)
         });
 
     } catch (err) {
@@ -160,22 +155,6 @@ router.post("/login", requireDatabase, requireJwtSecret, async (req, res) => {
             });
         }
 
-        if (!user.is_email_verified) {
-            return res.status(403).json({
-                error: "Please verify your email before logging in.",
-                code: "EMAIL_NOT_VERIFIED",
-                email: user.email
-            });
-        }
-
-        if (!user.is_email_verified && process.env.SKIP_EMAIL_VERIFICATION !== "true") {
-            return res.status(403).json({
-                error: "Please verify your email before logging in.",
-                code: "EMAIL_NOT_VERIFIED",
-                email: user.email
-            });
-        }
-
         res.json({
             success: true,
             user: {
@@ -191,64 +170,6 @@ router.post("/login", requireDatabase, requireJwtSecret, async (req, res) => {
 
         res.status(500).json({
             error: err.message
-        });
-
-    }
-
-});
-
-router.post("/verify-email", requireDatabase, async (req, res) => {
-
-    const { token } = req.body;
-
-    try {
-        const { status } = await emailVerificationService.consumeVerificationToken(token);
-
-        if (status === "verified") {
-            return res.json({ status });
-        }
-
-        if (status === "expired") {
-            return res.status(410).json({ status });
-        }
-
-        return res.status(400).json({ status });
-
-    } catch (err) {
-
-        console.error(err);
-
-        res.status(500).json({
-            error: "Lỗi máy chủ."
-        });
-
-    }
-
-});
-
-router.post("/resend-verification", requireDatabase, async (req, res) => {
-
-    const { email } = req.body;
-
-    if (!validators.isValidEmail(email)) {
-        return res.status(400).json({
-            error: "A valid email address is required."
-        });
-    }
-
-    try {
-        await emailVerificationService.reissueToken(email);
-
-        res.json({
-            message: "If that email is registered and not yet verified, a verification email has been sent."
-        });
-
-    } catch (err) {
-
-        console.error(err);
-
-        res.status(500).json({
-            error: "Lỗi máy chủ."
         });
 
     }
