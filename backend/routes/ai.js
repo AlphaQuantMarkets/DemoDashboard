@@ -11,6 +11,31 @@ const authMiddleware = require("../middleware/authMiddleware");
 const RISK_LEVELS = ["low", "medium", "high"];
 const TRENDS = ["up", "down", "flat"];
 
+// Caps how many Gemini calls (tutor + risk-explanation combined) this process
+// will have in flight at once. A burst of concurrent AI calls was observed to
+// take the whole backend down (not just these routes), so new requests beyond
+// the cap fail fast with a 503 instead of piling up.
+const MAX_CONCURRENT_AI_REQUESTS = 2;
+let activeAiRequests = 0;
+
+function withAiConcurrencyLimit(handler) {
+    return async (req, res) => {
+        if (activeAiRequests >= MAX_CONCURRENT_AI_REQUESTS) {
+            return res.status(503).json({
+                error: "AI service is busy right now. Please try again in a few seconds."
+            });
+        }
+
+        activeAiRequests += 1;
+
+        try {
+            await handler(req, res);
+        } finally {
+            activeAiRequests -= 1;
+        }
+    };
+}
+
 // Shown instead of a tutor answer that slipped past the prompt's safety rules
 // and gave a directive buy/sell/hold recommendation. Steers the user back to
 // what the tutor is for rather than just refusing.
@@ -58,7 +83,7 @@ function validateRiskExplanationRequest(body) {
     return null;
 }
 
-router.post("/tutor", authMiddleware, requirePremiumTutorAccess, async (req, res) => {
+router.post("/tutor", authMiddleware, requirePremiumTutorAccess, withAiConcurrencyLimit(async (req, res) => {
     try {
         const {
             question,
@@ -110,9 +135,9 @@ router.post("/tutor", authMiddleware, requirePremiumTutorAccess, async (req, res
                 : "Failed to generate AI response"
         });
     }
-});
+}));
 
-router.post("/risk-explanation", async (req, res) => {
+router.post("/risk-explanation", withAiConcurrencyLimit(async (req, res) => {
     try {
         const validationError = validateRiskExplanationRequest(req.body);
 
@@ -144,6 +169,6 @@ router.post("/risk-explanation", async (req, res) => {
                 : "Failed to generate AI response"
         });
     }
-});
+}));
 
 module.exports = router;

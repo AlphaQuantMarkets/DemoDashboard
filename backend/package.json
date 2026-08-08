@@ -7,6 +7,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "prestart": "node run-migrations.js",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "migrate": "node run-migrations.js",

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import time
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -23,10 +23,23 @@ BENCHMARK_INDEX = "VNINDEX"
 HISTORY_START = "2023-01-01"
 UPSERT_BATCH_SIZE = 500
 
-# vnstock's free ("Guest") tier allows 20 requests/minute, and fetch_prices()
-# issues ~2 requests per symbol — so a fixed delay between symbols keeps us
-# under that limit proactively instead of just reacting to being throttled.
-REQUEST_DELAY_SECONDS = 4
+# vnstock's free ("Guest") tier silently caps a single ohlcv() call to
+# roughly the most recent 100 rows *within the requested range* — it does
+# NOT error, it just quietly drops everything older, regardless of how far
+# back `start` is. Confirmed directly: requesting 2023-01-01..today returns
+# only ~100 recent trading days, but requesting a narrow window entirely
+# inside 2023 returns real 2023 data. So actually reaching back to
+# HISTORY_START requires splitting the range into windows comfortably under
+# that per-call cap — see CHUNK_DAYS below.
+CHUNK_DAYS = 90  # ~60 trading days per window; safely under the ~100-row cap
+
+# vnstock's free ("Guest") tier allows 20 requests/minute, and each ohlcv()
+# call issues ~2 requests — so a fixed delay between requests (used both
+# between chunks within a symbol and between symbols) keeps us under that
+# limit proactively instead of just reacting to being throttled. Chunking
+# (above) multiplies how many ohlcv() calls a full sync makes, so this needs
+# to hold to ≤20/min on its own: 2 requests every 6s ≈ 20/min.
+REQUEST_DELAY_SECONDS = 6
 # vnstock signals "you're rate-limited" by calling sys.exit(), which raises
 # SystemExit — not a normal Exception — so it must be caught explicitly.
 # Confirmed live: syncing all 30 VN30 symbols without any delay hit this
@@ -62,21 +75,31 @@ def get_supabase_client() -> Client:
 
     return create_client(url, service_key)
 
-def fetch_prices(market: Market, symbol: str) -> list[dict]:
-    quote = market.index(symbol) if symbol == BENCHMARK_INDEX else market.equity(symbol)
-    history = quote.ohlcv(
-        start=HISTORY_START,
-        end=date.today().isoformat(),
-        interval="1D",
-    )
+def _date_chunks(start: str, end: str, chunk_days: int) -> list[tuple[str, str]]:
+    """Split [start, end] into consecutive (chunk_start, chunk_end) windows of
+    at most chunk_days each, so each window stays under vnstock's per-call
+    row cap regardless of how far apart start and end are."""
+    chunks: list[tuple[str, str]] = []
+    chunk_start = date.fromisoformat(start)
+    final_end = date.fromisoformat(end)
+
+    while chunk_start <= final_end:
+        chunk_end = min(chunk_start + timedelta(days=chunk_days - 1), final_end)
+        chunks.append((chunk_start.isoformat(), chunk_end.isoformat()))
+        chunk_start = chunk_end + timedelta(days=1)
+
+    return chunks
+
+
+def _history_to_records(symbol: str, history) -> list[dict]:
+    """Convert one ohlcv() result (a pandas DataFrame) into upsert-ready dicts."""
     if history.empty:
-        print(f"⚠️ No historical data for {symbol} — skipping")
         return []
 
     required_columns = {"time", "open", "high", "low", "close", "volume"}
     missing_columns = required_columns.difference(history.columns)
     if missing_columns:
-        print(f"⚠️ Missing columns for {symbol}: {sorted(missing_columns)} — skipping")
+        print(f"⚠️ Missing columns for {symbol}: {sorted(missing_columns)} — skipping chunk")
         return []
 
     records: list[dict] = []
@@ -95,6 +118,24 @@ def fetch_prices(market: Market, symbol: str) -> list[dict]:
                 "volume": int(volume),
             }
         )
+
+    return records
+
+
+def fetch_prices(market: Market, symbol: str) -> list[dict]:
+    quote = market.index(symbol) if symbol == BENCHMARK_INDEX else market.equity(symbol)
+    chunks = _date_chunks(HISTORY_START, date.today().isoformat(), CHUNK_DAYS)
+
+    records: list[dict] = []
+    for chunk_index, (chunk_start, chunk_end) in enumerate(chunks):
+        history = quote.ohlcv(start=chunk_start, end=chunk_end, interval="1D")
+        records.extend(_history_to_records(symbol, history))
+
+        if chunk_index < len(chunks) - 1:
+            time.sleep(REQUEST_DELAY_SECONDS)
+
+    if not records:
+        print(f"⚠️ No historical data for {symbol} — skipping")
 
     return records
 
