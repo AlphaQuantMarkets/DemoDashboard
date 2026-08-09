@@ -21,9 +21,36 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
     : DEFAULT_DEV_ORIGINS;
 
-const apiRateLimiter = rateLimit({
+// Auth and AI are sensitive/abuse-prone (brute-force risk, real per-call
+// Gemini cost) — each kept at the original limit, unchanged, but as
+// independent instances so heavy legitimate use of one (e.g. a premium user
+// asking the AI Tutor several questions) can't lock the user out of the
+// other (e.g. logging back in).
+const authRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please try again later." }
+});
+
+const aiRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please try again later." }
+});
+
+// Stock/user-state reads are cheap, server-side DB reads, and a single
+// dashboard page load legitimately fires ~30+ of them at once (one per
+// ticker). Sharing the strict bucket above meant 3-4 page reloads alone
+// exhausted it and locked the user out of login/AI for the rest of the
+// window. This tier is sized for that real read volume while still being a
+// genuine cap against scraping/abuse.
+const readApiRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 300,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: "Too many requests. Please try again later." }
@@ -41,12 +68,11 @@ app.use(cors({
     }
 }));
 app.use(express.json());
-app.use("/api", apiRateLimiter);
-app.use("/api/ai", aiRoutes);
-app.use("/api/stocks", stocksRoutes);
-app.use("/api/user-state", userStateRoutes);
+app.use("/api/ai", aiRateLimiter, aiRoutes);
+app.use("/api/stocks", readApiRateLimiter, stocksRoutes);
+app.use("/api/user-state", readApiRateLimiter, userStateRoutes);
 
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRateLimiter, authRoutes);
 
 // Clean URLs for the public/auth/dashboard pages. Redirecting (rather than
 // sendFile-ing) keeps the browser's URL under /frontend/*, so each page's
@@ -69,7 +95,7 @@ app.get("/dashboard", (req, res) => {
     res.redirect("/frontend/dashboard.html");
 });
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", readApiRateLimiter, (req, res) => {
     res.json({
         status: "ok",
         databaseConfigured: Boolean(process.env.DATABASE_URL),
@@ -77,7 +103,7 @@ app.get("/api/health", (req, res) => {
     });
 });
 
-app.get("/api/db-health", async (req, res) => {
+app.get("/api/db-health", readApiRateLimiter, async (req, res) => {
     if (!process.env.DATABASE_URL) {
         return res.status(503).json({
             status: "unavailable",

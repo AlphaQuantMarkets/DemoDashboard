@@ -14,6 +14,11 @@ router.get("/:symbol/history", async (req, res) => {
 
     try {
         const history = await getStockHistory(symbol);
+        // Price history only changes once/day (the scheduled sync job) — a
+        // short cache lets repeated page loads within the same browsing
+        // session skip a re-fetch entirely instead of counting against the
+        // rate limit every time.
+        res.set("Cache-Control", "public, max-age=300");
         res.json({ symbol, history });
     } catch (error) {
         const status = Number.isInteger(error.status) ? error.status : 500;
